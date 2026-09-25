@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Nobody Mows — Idle Lawn Game</title>
 <meta name="description" content="A tiny idle lawn-mowing game for Nobody Asked Data." />
+<script>try{if(window.self!==window.top)document.documentElement.classList.add("is-embedded")}catch(e){document.documentElement.classList.add("is-embedded")}</script>
 <style>
 :root{
   --bg:#0f1712;
@@ -40,6 +41,41 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;
 .prestige{background:linear-gradient(135deg,#352b18,#1f2d1e);border:1px solid rgba(255,209,102,.32)}.prestige .buy{background:linear-gradient(135deg,#ffd166,#ffb703);color:#2a1d00;width:100%;margin-top:8px}.danger{background:#3a2020;color:#ffdede}
 .footer{color:var(--muted);text-align:center;font-size:12px;padding:18px}
 .overlay{position:fixed;inset:0;background:rgba(3,6,4,.78);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}.overlay.show{display:flex}.modal{width:min(520px,100%);background:#17231b;border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 30px 100px rgba(0,0,0,.45)}.modal h3{margin-top:0}.modal button{width:100%;margin-top:8px}
+.embed-dock{display:none}
+.is-embedded body{background:#0b110d;overflow-x:hidden}
+.is-embedded .wrap{width:100%;max-width:none;padding:6px 6px 66px}
+.is-embedded .topbar{display:block;margin:0 0 6px}
+.is-embedded .brand{display:none}
+.is-embedded .statstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.is-embedded .pill{min-width:0;padding:7px 4px;text-align:center;font-size:10px;overflow:hidden;text-overflow:ellipsis}
+.is-embedded .layout{display:block}
+.is-embedded .gamecard{padding:7px;border-radius:14px}
+.is-embedded .hud{gap:5px;margin-bottom:6px}
+.is-embedded .stage{font-size:14px}
+.is-embedded .sub{font-size:10px}
+.is-embedded .stage-progress{width:min(100%,330px);margin-top:5px}
+.is-embedded .stage-progress-label{font-size:8px}
+.is-embedded .canvaswrap{min-height:0;border-radius:11px}
+.is-embedded .actions{grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}
+.is-embedded .action{min-width:0;padding:8px 3px;border-radius:10px;font-size:10px}
+.is-embedded .action small{font-size:8px;line-height:1.15}
+.is-embedded .sidebar{position:fixed;z-index:40;left:6px;right:6px;bottom:58px;display:block;max-height:68vh;overflow:auto;padding:0;background:#101a13;border:1px solid rgba(255,255,255,.12);border-radius:18px;box-shadow:0 -18px 55px rgba(0,0,0,.48);transform:translateY(calc(100% + 80px));transition:transform .22s ease}
+.is-embedded .sidebar.embed-open{transform:translateY(0)}
+.is-embedded .sidebar>.card{margin:0 0 8px;border-radius:16px;box-shadow:none}
+.is-embedded .sidebar>.card:last-child{display:none}
+.is-embedded .tabs{position:sticky;top:0;z-index:2;background:#17231b;border-radius:16px 16px 0 0;padding:6px}
+.is-embedded .tab{font-size:10px;padding:8px 4px}
+.is-embedded .section{padding:9px}
+.is-embedded .upgrade{padding:8px;margin:6px 0;gap:6px}
+.is-embedded .upgrade b{font-size:12px}
+.is-embedded .upgrade span{font-size:10px}
+.is-embedded .upgrade-buy{min-width:96px;max-width:108px;min-height:42px}
+.is-embedded .footer{display:none}
+.is-embedded .embed-dock{position:fixed;z-index:60;left:6px;right:6px;bottom:6px;display:grid;grid-template-columns:1fr auto;gap:6px;padding:6px;background:rgba(9,15,11,.94);border:1px solid rgba(255,255,255,.13);border-radius:14px;box-shadow:0 10px 35px rgba(0,0,0,.42);backdrop-filter:blur(10px)}
+.is-embedded .embed-dock button{border:1px solid rgba(255,255,255,.10);border-radius:10px;background:#294432;color:#fff;padding:9px 10px;font:900 10px system-ui;cursor:pointer}
+.is-embedded .embed-dock button:last-child{background:#1d2b22;color:#cfe0d2}
+.is-embedded .weather-pill{font-size:9px;padding:5px 7px;right:7px;top:7px}
+.is-embedded .boss-card{width:min(292px,92%);padding:10px}
 @media(max-width:880px){.topbar{grid-template-columns:1fr}.statstrip{justify-content:flex-start}.layout{grid-template-columns:1fr}.sidebar{grid-template-columns:1fr}.canvaswrap{min-height:0}.actions{grid-template-columns:1fr}.wrap{padding:10px}.card{border-radius:18px}}
 </style>
 </head>
@@ -180,6 +216,20 @@ let lawn = [], particles = [], mowers = [];
 let pointerDown = false, lastPointerCell = '';
 let offlinePending = 0;
 let buyMode = 1;
+const IS_EMBEDDED=document.documentElement.classList.contains('is-embedded');
+if(IS_EMBEDDED){
+  const sidebar=document.querySelector('.sidebar');
+  const dock=document.createElement('div');
+  dock.className='embed-dock';
+  dock.innerHTML='<button type="button" id="embedMenuBtn">UPGRADES & MENU</button><button type="button" id="embedFullBtn">FULL SCREEN</button>';
+  document.body.appendChild(dock);
+  const menuBtn=dock.querySelector('#embedMenuBtn');
+  menuBtn.onclick=()=>{
+    const open=sidebar.classList.toggle('embed-open');
+    menuBtn.textContent=open?'CLOSE MENU':'UPGRADES & MENU';
+  };
+  dock.querySelector('#embedFullBtn').onclick=()=>window.open(location.href,'_blank','noopener');
+}
 
 function fmt(n){
   if(!isFinite(n)) return '∞';
@@ -805,9 +855,9 @@ window.NobodyMowsAPI = {
 };
 })();
 </script>
-<script src="visuals.js?v=13"></script>
-<script src="v3.js?v=12"></script>
-<script src="juice.js?v=1"></script>
-<script src="fun.js?v=1"></script>
+<script src="visuals.js?v=14"></script>
+<script src="v3.js?v=13"></script>
+<script src="juice.js?v=2"></script>
+<script src="fun.js?v=2"></script>
 </body>
 </html>
