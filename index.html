@@ -32,7 +32,7 @@ button{font:inherit}
 canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;touch-action:none;background:#28572f}
 .toast{position:absolute;left:50%;top:18px;transform:translateX(-50%) translateY(-8px);background:rgba(8,12,9,.88);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.13);padding:10px 14px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .combo{position:absolute;right:14px;bottom:12px;font-weight:900;font-size:clamp(18px,4vw,34px);text-shadow:0 4px 18px rgba(0,0,0,.35);opacity:.9}
-.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.action{border:0;border-radius:14px;padding:11px 8px;background:#263b2d;color:white;font-weight:800;cursor:pointer;border:1px solid var(--line)}.action:disabled{opacity:.4;cursor:not-allowed}.action small{display:block;color:var(--muted);font-weight:600;margin-top:2px}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.action{border:0;border-radius:14px;padding:11px 8px;background:#263b2d;color:white;font-weight:800;cursor:pointer;border:1px solid var(--line);transition:.16s}.action:not(:disabled):hover{transform:translateY(-1px);background:#2d4836}.action:disabled{opacity:.52;cursor:not-allowed}.action.active-skill{opacity:1;background:linear-gradient(135deg,#355f40,#294a34);border-color:rgba(155,225,93,.65);box-shadow:0 0 0 1px rgba(155,225,93,.12) inset,0 8px 20px rgba(70,145,70,.16)}.action small{display:block;color:var(--muted);font-weight:600;margin-top:2px}.action.active-skill small{color:#d9f6c9}
 .sidebar{display:grid;gap:12px}.section{padding:14px}.section h2{margin:0 0 10px;font-size:17px}.upgrade{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:14px;padding:11px;margin:8px 0}.upgrade b{display:block;font-size:14px}.upgrade span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.buy{border:0;background:linear-gradient(135deg,var(--accent),#6bcf3f);color:#0b160d;padding:9px 11px;border-radius:12px;font-weight:900;cursor:pointer;min-width:86px}.buy:disabled{filter:grayscale(1);opacity:.45;cursor:not-allowed}.buy-modes{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 0 12px;padding:7px 8px;border:1px solid var(--line);background:rgba(255,255,255,.025);border-radius:14px}.buy-modes>div{display:flex;gap:5px}.buy-modes .mode{border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;cursor:pointer;transition:.16s}.buy-modes .mode:hover{transform:translateY(-1px);background:rgba(255,255,255,.07)}.buy-modes .mode.active{background:linear-gradient(135deg,#446f4e,#2e5137);color:white;border-color:rgba(155,225,93,.58);box-shadow:0 0 0 1px rgba(155,225,93,.08) inset}.balance-note{font-size:11px;color:var(--muted);margin:0;font-weight:800}.upgrade-buy{min-width:116px;max-width:132px;min-height:48px;padding:7px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.05;white-space:normal;overflow:visible;text-overflow:clip;box-shadow:0 8px 18px rgba(73,151,52,.12);transition:transform .14s,box-shadow .14s}.upgrade-buy:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(73,151,52,.20)}.upgrade-buy .buy-kicker{display:block;margin:0;color:#173018;font-size:10px;font-weight:1000;letter-spacing:.035em;text-transform:uppercase;opacity:.78}.upgrade-buy .buy-price{display:block;margin:0;color:#071408;font-size:14px;font-weight:1000;letter-spacing:-.02em}.upgrade-buy.is-max{background:linear-gradient(135deg,#a7ef65,#6dd63d)}.upgrade-buy.is-max .buy-kicker{background:rgba(7,20,8,.12);padding:3px 6px;border-radius:999px;opacity:1}.upgrade-buy:disabled{box-shadow:none}.upgrade-buy:disabled .buy-kicker,.upgrade-buy:disabled .buy-price{color:#1b241d}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px}.tab{border:1px solid var(--line);background:transparent;color:var(--muted);padding:9px;border-radius:12px;font-weight:800;cursor:pointer}.tab.active{background:#294432;color:white}.tabpanel{display:none}.tabpanel.active{display:block}
 .progress{height:9px;background:#0d150f;border-radius:99px;overflow:hidden;border:1px solid var(--line);margin-top:8px}.progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .25s}
 .mission{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0}.mission.done{border-color:rgba(155,225,93,.65);background:rgba(155,225,93,.08)}
@@ -73,9 +73,9 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;
         <div class="combo" id="combo"></div>
       </div>
       <div class="actions">
-        <button class="action" id="turboBtn">Turbo Mow<small id="turboLabel">Unlocks at Suburban Lawn</small></button>
-        <button class="action" id="rainBtn">Rainstorm<small id="rainLabel">Unlocks at Golf Course</small></button>
-        <button class="action" id="perfectBtn">Perfect Cut<small id="perfectLabel">Unlocks at Stadium</small></button>
+        <button class="action" id="turboBtn">Overdrive<small id="turboLabel">Unlocks at Suburban Lawn</small></button>
+        <button class="action" id="rainBtn">Growth Surge<small id="rainLabel">Unlocks at Golf Course</small></button>
+        <button class="action" id="perfectBtn">Mowpocalypse<small id="perfectLabel">Unlocks at Stadium</small></button>
       </div>
     </section>
 
@@ -214,7 +214,7 @@ function maxAffordable(def){
   return count;
 }
 function repMult(){return 1 + Math.log10(1+Math.max(0,S.rep||0))*0.50}
-function cutValue(){const level=S.upgrades.grassValue||0, weather=(S.weather&&S.weather.valueMult)||1; return stages[S.stage].grass * Math.pow(1.20,level) * repMult() * (Date.now()<(S.ability.turboUntil||0)?3:1) * weather}
+function cutValue(){const level=S.upgrades.grassValue||0, weather=(S.weather&&S.weather.valueMult)||1; return stages[S.stage].grass * Math.pow(1.20,level) * repMult() * (Date.now()<(S.ability.turboUntil||0)?4:1) * weather}
 function autoTilesPerSec(){
   const u=S.upgrades, weather=(S.weather&&S.weather.autoMult)||1;
   return ((u.push||0)*1 + (u.electric||0)*4 + (u.rider||0)*14 + (u.robot||0)*45 + (u.drone||0)*150 + (u.fleet||0)*500
@@ -222,7 +222,7 @@ function autoTilesPerSec(){
 }
 function regrowEfficiency(){return 1+Math.min(1.5,(S.upgrades.regrow||0)*.025)}
 function dps(){
-  const surge=Date.now()<(S.ability.rainUntil||0)?1.25:1;
+  const surge=Date.now()<(S.ability.rainUntil||0)?1.75:1;
   return autoTilesPerSec()*cutValue()*regrowEfficiency()*surge;
 }
 function companyValue(){return S.lifetime + Object.values(S.upgrades).reduce((a,b)=>a+b*100,0)}
@@ -522,28 +522,75 @@ function renderMissions(){
   missions.forEach(m=>{const done=!!S.missions[m.id];let v=m.stat==='stage'?S.stage:S[m.stat]||0;const pct=Math.min(100,v/m.target*100);const el=document.createElement('div');el.className='mission '+(done?'done':'');el.innerHTML=`<b>${m.text}</b><div class="sub">Reward ${money(m.reward)} ${done?'— completed':''}</div><div class="progress"><i style="width:${pct}%"></i></div>`;box.appendChild(el)});
 }
 function renderStats(){
-  const box=$('#stats'); const fields=[['Total cash earned',money(S.lifetime)],['Tiles mowed',fmt(S.tiles)],['Equivalent soccer fields',(S.tiles/7140).toFixed(2)],['Approx. grass blades destroyed',fmt(S.tiles*580)],['Weird items found',fmt(S.items)],['Boss weeds defeated',fmt(S.bossKills||0)],['Best combo','x'+S.bestCombo],['Current auto cuts/sec',fmt(autoTilesPerSec())],['Offline income rate','50%']];
+  const box=$('#stats'); const fields=[['Total cash earned',money(S.lifetime)],['Tiles mowed',fmt(S.tiles)],['Equivalent soccer fields',(S.tiles/7140).toFixed(2)],['Approx. grass blades destroyed',fmt(S.tiles*580)],['Weird items found',fmt(S.items)],['Boss weeds defeated',fmt(S.bossKills||0)],['Best combo','x'+S.bestCombo],['Current auto cuts/sec',fmt(autoTilesPerSec())],['Offline income rate','50% of normal DPS']];
   box.innerHTML='<h2>Pointless statistics</h2>'+fields.map(([a,b])=>`<div class="upgrade"><div><b>${a}</b></div><strong>${b}</strong></div>`).join('');
   const found=Object.entries(S.found); if(found.length) box.innerHTML+='<h2 style="margin-top:16px">Stuff found in the grass</h2>'+found.map(([k,v])=>`<div class="sub">${k} × ${v}</div>`).join('');
 }
 function renderAbilities(){
   const defs=[
-    {id:'turboBtn',unlock:1,cdKey:'turboCd',untilKey:'turboUntil',dur:60000,cd:120000,name:'Turbo Mow',desc:'3× income for 60 sec'},
-    {id:'rainBtn',unlock:2,cdKey:'rainCd',untilKey:'rainUntil',dur:30000,cd:150000,name:'Rainstorm',desc:'very fast regrowth for 30 sec'},
-    {id:'perfectBtn',unlock:3,cdKey:'perfectCd',untilKey:null,dur:0,cd:180000,name:'Perfect Cut',desc:'cut every standing tile once'}
+    {id:'turboBtn',unlock:1,cdKey:'turboCd',untilKey:'turboUntil',dur:35000,cd:90000,name:'Overdrive',desc:'4× total income for 35 sec',kind:'boost'},
+    {id:'rainBtn',unlock:2,cdKey:'rainCd',untilKey:'rainUntil',dur:30000,cd:120000,name:'Growth Surge',desc:'1.75× income + instant regrowth for 30 sec',kind:'growth'},
+    {id:'perfectBtn',unlock:3,cdKey:'perfectCd',untilKey:null,dur:0,cd:180000,name:'Mowpocalypse',desc:'Instantly bank 60 sec of current income',kind:'bank'}
   ];
+
   defs.forEach(def=>{
     const b=$('#'+def.id), label=b.querySelector('small');
-    if(S.stage<def.unlock){b.disabled=true;return;}
-    const now=Date.now(), cdUntil=S.ability[def.cdKey]||0, ready=cdUntil<=now;
+    b.classList.remove('active-skill');
+
+    if(S.stage<def.unlock){
+      b.disabled=true;
+      label.textContent='Unlocks at '+stages[def.unlock].name;
+      return;
+    }
+
+    const now=Date.now(), cdUntil=S.ability[def.cdKey]||0;
+    const activeUntil=def.untilKey?(S.ability[def.untilKey]||0):0;
+    const active=activeUntil>now;
+    const ready=cdUntil<=now;
+
     b.disabled=!ready;
-    label.textContent=ready?def.desc:'Cooldown '+Math.ceil((cdUntil-now)/1000)+'s';
+
+    if(active){
+      b.classList.add('active-skill');
+      label.textContent='ACTIVE '+Math.ceil((activeUntil-now)/1000)+'s · cooldown '+Math.max(0,Math.ceil((cdUntil-now)/1000))+'s';
+    }else{
+      label.textContent=ready?def.desc:'Cooldown '+Math.ceil((cdUntil-now)/1000)+'s';
+    }
+
     b.onclick=()=>{
       if(!ready)return;
-      if(def.untilKey) S.ability[def.untilKey]=Date.now()+def.dur;
-      else lawn.forEach((c,i)=>{if(!c.cut)cutTile(i,false)});
+
+      if(def.kind==='boost'){
+        S.ability.turboUntil=Date.now()+def.dur;
+        toast('OVERDRIVE! Income ×4 for 35 seconds.');
+        log('Overdrive activated: 4× total income for 35 seconds.');
+      }
+
+      if(def.kind==='growth'){
+        S.ability.rainUntil=Date.now()+def.dur;
+        lawn.forEach(cell=>{
+          cell.cut=false;
+          cell.cutAt=0;
+          if(Math.random()<.10) cell.golden=true;
+        });
+        toast('GROWTH SURGE! The field exploded back to life.');
+        log('Growth Surge instantly regrew the lawn and boosted income.');
+      }
+
+      if(def.kind==='bank'){
+        const payout=Math.max(cutValue()*500,dps()*60);
+        S.cash+=payout;
+        S.lifetime+=payout;
+        lawn.forEach((cell,i)=>{
+          if(!cell.cut){cell.cut=true;cell.cutAt=Date.now();}
+        });
+        updateStage();
+        toast('MOWPOCALYPSE! +'+money(payout));
+        log('Mowpocalypse banked 60 seconds of income: '+money(payout)+'.');
+      }
+
       S.ability[def.cdKey]=Date.now()+def.cd;
-      toast(def.name+' activated!');log(def.name+' activated.');renderAll();save();
+      renderAll();save();
     };
   });
 }
@@ -738,7 +785,7 @@ window.NobodyMowsAPI = {
 };
 })();
 </script>
-<script src="visuals.js?v=10"></script>
-<script src="v3.js?v=10"></script>
+<script src="visuals.js?v=11"></script>
+<script src="v3.js?v=11"></script>
 </body>
 </html>
