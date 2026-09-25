@@ -23,6 +23,7 @@ style.textContent =
 '.boss-dmg{position:absolute;z-index:9;color:white;font:900 18px system-ui,sans-serif;text-shadow:0 2px 5px #000;pointer-events:none;animation:dmgFly .7s forwards}@keyframes dmgFly{to{transform:translateY(-48px) scale(1.18);opacity:0}}' +
 '.collection-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.collection-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.collect-card{min-width:0;border:1px solid var(--line);border-radius:12px;padding:8px;background:rgba(255,255,255,.035)}.collect-card.locked{opacity:.36;filter:saturate(.2)}.collect-card b{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.collect-card small{font-size:10px;color:var(--muted)}' +
 '.rarity-Common{color:#c7d2c9}.rarity-Uncommon{color:#8ee68f}.rarity-Rare{color:#79bdff}.rarity-Epic{color:#cf8bff}.rarity-WTF{color:#ffd166}' +
+'.set-head{margin:16px 0 7px;font:900 13px system-ui}.set-grid{display:grid;gap:7px}.set-card{border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:9px;background:rgba(255,255,255,.025)}.set-card.complete{border-color:rgba(155,225,93,.55);background:rgba(155,225,93,.08)}.set-card b{font-size:12px}.set-card small{display:block;color:#a9b9ad;font-size:10px;margin-top:3px}.set-card.complete small{color:#c9f3b5}' +
 '.weatherfx{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}@media(max-width:520px){.boss-card{width:min(300px,88%)}.collection-grid{grid-template-columns:1fr}.weather-pill{font-size:10px}}';
 document.head.appendChild(style);
 
@@ -119,7 +120,8 @@ function startBoss(){
   const maxHp=Math.round(1200*(1+stage*.35)*(1+Math.min(k,60)*.035));
   const passive=(api.dps?api.dps():api.autoTilesPerSec()*api.cutValue());
   const rewardSeconds=28+stage*4+Math.min(20,k*.35);
-  const reward=Math.max(3000,Math.round(Math.max(passive,api.cutValue()*8)*rewardSeconds));
+  const collection=api.collectionBonuses?api.collectionBonuses():{boss:1};
+  const reward=Math.max(3000,Math.round(Math.max(passive,api.cutValue()*8)*rewardSeconds*(collection.boss||1)));
   S.boss={name:bossNames[k%bossNames.length],hp:maxHp,maxHp:maxHp,reward:reward,startedAt:Date.now()};
   api.toast('BOSS WEED! '+S.boss.name);
   api.log(S.boss.name+' grew where absolutely nobody wanted it.');
@@ -225,7 +227,15 @@ function renderCollection(){
     const n=found[x.name]||0,locked=!n;
     cards+='<div class="collect-card '+(locked?'locked':'')+'"><b>'+(locked?'???':x.name)+'</b><small class="rarity-'+x.rarity+'">'+x.rarity+(n?' · ×'+n:'')+'</small></div>';
   });
-  box.innerHTML='<div class="collection-head"><h2 style="margin:0">Lawn collection</h2><b>'+unlocked+'/'+defs.length+'</b></div><div class="sub" style="margin-bottom:10px">Things that had no business being in the grass.</div><div class="collection-grid">'+cards+'</div>';
+
+  const bonus=api.collectionBonuses?api.collectionBonuses():{sets:[],mastery:false};
+  let sets='';
+  (bonus.sets||[]).forEach(set=>{
+    sets+='<div class="set-card '+(set.complete?'complete':'')+'"><b>'+(set.complete?'ACTIVE · ':'')+set.name+'</b><small>'+set.owned+'/'+set.items.length+' items · '+set.effect+'</small></div>';
+  });
+  sets+='<div class="set-card '+(bonus.mastery?'complete':'')+'"><b>'+(bonus.mastery?'ACTIVE · ':'')+'Collector Mastery</b><small>'+unlocked+'/12 unique items · All income +15%</small></div>';
+
+  box.innerHTML='<div class="collection-head"><h2 style="margin:0">Lawn collection</h2><b>'+unlocked+'/'+defs.length+'</b></div><div class="sub" style="margin-bottom:10px">Complete sets for permanent bonuses.</div><div class="collection-grid">'+cards+'</div><div class="set-head">Collection set bonuses</div><div class="set-grid">'+sets+'</div>';
 }
 installCollectionTab();
 renderCollection();
