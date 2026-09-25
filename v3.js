@@ -39,10 +39,16 @@ weatherBadge.textContent = 'CLEAR Clear';
 wrap.appendChild(weatherBadge);
 
 const weatherDefs = [
-  {type:'Rain', icon:'RAIN', duration:38000, valueMult:1, regrowMult:.24, autoMult:1, goldenMult:1, note:'Grass regrows 4x faster'},
-  {type:'Heatwave', icon:'HEAT', duration:36000, valueMult:1.25, regrowMult:1.75, autoMult:1, goldenMult:1, note:'+25% value, slower regrowth'},
-  {type:'Tailwind', icon:'WIND', duration:42000, valueMult:1, regrowMult:1, autoMult:1.5, goldenMult:1, note:'+50% automatic mowing'},
-  {type:'Golden Hour', icon:'GOLD', duration:33000, valueMult:1.1, regrowMult:1, autoMult:1, goldenMult:4, note:'4x golden grass chance'}
+  {type:'Rain', icon:'RAIN', duration:38000, valueMult:1, regrowMult:.28, autoMult:1.18, goldenMult:1, note:'Fast regrowth +18% idle output'},
+  {type:'Heatwave', icon:'HEAT', duration:36000, valueMult:1.20, regrowMult:1.55, autoMult:1, goldenMult:1, note:'+20% cut value, slower regrowth'},
+  {type:'Tailwind', icon:'WIND', duration:42000, valueMult:1, regrowMult:1, autoMult:1.35, goldenMult:1, note:'+35% automatic mowing'},
+  {type:'Golden Hour', icon:'GOLD', duration:33000, valueMult:1.05, regrowMult:1, autoMult:1, goldenMult:3, note:'3x golden grass chance'}
+];
+const spaceWeatherDefs = [
+  {type:'Solar Wind', icon:'SOLAR', duration:40000, valueMult:1, regrowMult:1, autoMult:1.45, goldenMult:1, note:'+45% automatic mowing'},
+  {type:'Meteor Shower', icon:'METEOR', duration:34000, valueMult:1.25, regrowMult:1.15, autoMult:1, goldenMult:2, note:'+25% cut value + rare grass'},
+  {type:'Cosmic Bloom', icon:'BLOOM', duration:38000, valueMult:1.05, regrowMult:.35, autoMult:1.15, goldenMult:2, note:'Fast regrowth +15% idle output'},
+  {type:'Eclipse', icon:'ECLIPSE', duration:32000, valueMult:1.15, regrowMult:1, autoMult:1, goldenMult:4, note:'+15% value + 4x golden grass'}
 ];
 const clearWeather = () => ({type:'Clear',icon:'CLEAR',until:0,valueMult:1,regrowMult:1,autoMult:1,goldenMult:1,note:'Normal mowing conditions'});
 
@@ -66,8 +72,21 @@ function ensureState(){
   if (!S.weather || typeof S.weather !== 'object') S.weather = clearWeather();
   if (!Number.isFinite(S.nextWeatherAt)) S.nextWeatherAt = Date.now() + 35000;
   if (!Number.isFinite(S.bossKills)) S.bossKills = 0;
-  if (!Number.isFinite(S.nextBossTiles)) S.nextBossTiles = Math.max(350, S.tiles + 350);
+  if (!Number.isFinite(S.nextBossTiles)) S.nextBossTiles = Math.max(500, (S.tiles||0) + 500);
+  if (!Number.isFinite(S.nextBossAt)) S.nextBossAt = Date.now() + 90000;
   if (S.boss && (!Number.isFinite(S.boss.hp) || S.boss.hp <= 0)) S.boss = null;
+
+  // Normalize bosses created by older balance versions without deleting the fight.
+  if (S.boss && Number.isFinite(S.boss.maxHp)) {
+    const target=Math.round(1200*(1+(S.stage||0)*.35)*(1+Math.min(S.bossKills||0,60)*.035));
+    if (S.boss.maxHp>target*8) {
+      const ratio=Math.max(.01,Math.min(1,S.boss.hp/S.boss.maxHp));
+      S.boss.maxHp=target;
+      S.boss.hp=Math.max(1,target*ratio);
+      const passive=(api.dps?api.dps():api.autoTilesPerSec()*api.cutValue());
+      S.boss.reward=Math.max(3000,passive*(28+(S.stage||0)*4));
+    }
+  }
 }
 ensureState();
 
@@ -87,7 +106,8 @@ function weatherTick(){
     api.toast('The weather cleared.');
   }
   if ((!S.weather || S.weather.type==='Clear') && now >= (S.nextWeatherAt||0)) {
-    setWeather(weatherDefs[Math.floor(Math.random()*weatherDefs.length)]);
+    const pool=(S.stage||0)>=5?spaceWeatherDefs:weatherDefs;
+    setWeather(pool[Math.floor(Math.random()*pool.length)]);
   }
   const left=S.weather && S.weather.until>now?' · '+Math.ceil((S.weather.until-now)/1000)+'s':'';
   weatherBadge.textContent=((S.weather&&S.weather.icon)||'CLEAR')+' '+((S.weather&&S.weather.type)||'Clear')+left;
@@ -95,9 +115,11 @@ function weatherTick(){
 
 function startBoss(){
   const S=api.state;
-  const k=S.bossKills||0;
-  const maxHp=Math.round(42*Math.pow(1.62,k));
-  const reward=Math.max(3000,Math.round(api.cutValue()*maxHp*(25+k*3)));
+  const k=S.bossKills||0, stage=S.stage||0;
+  const maxHp=Math.round(1200*(1+stage*.35)*(1+Math.min(k,60)*.035));
+  const passive=(api.dps?api.dps():api.autoTilesPerSec()*api.cutValue());
+  const rewardSeconds=28+stage*4+Math.min(20,k*.35);
+  const reward=Math.max(3000,Math.round(Math.max(passive,api.cutValue()*8)*rewardSeconds));
   S.boss={name:bossNames[k%bossNames.length],hp:maxHp,maxHp:maxHp,reward:reward,startedAt:Date.now()};
   api.toast('BOSS WEED! '+S.boss.name);
   api.log(S.boss.name+' grew where absolutely nobody wanted it.');
@@ -144,8 +166,10 @@ function killBoss(){
   const S=api.state,b=S.boss;if(!b)return;
   S.cash+=b.reward;S.lifetime+=b.reward;S.bossKills=(S.bossKills||0)+1;
   const drop=bossDrop();
-  const gap=900+S.bossKills*550;
-  S.nextBossTiles=S.tiles+gap;
+  const stage=S.stage||0;
+  const gap=1400+stage*550+Math.min(S.bossKills,30)*120;
+  S.nextBossTiles=(S.tiles||0)+gap;
+  S.nextBossAt=Date.now()+120000+Math.floor(Math.random()*90000);
   api.toast('BOSS DOWN! +'+api.money(b.reward)+(drop?' · '+drop.name:''));
   api.log(b.name+' was defeated for '+api.money(b.reward)+(drop?' and dropped '+drop.name:'')+'.');
   S.boss=null;
@@ -157,15 +181,18 @@ function renderBoss(){
   if(!b){bossLayer.classList.remove('show');return}
   bossLayer.classList.add('show');
   $('#bossTitle').textContent=b.name;
-  $('#bossSub').textContent='Tap it for faster kills · auto mowers finish bosses in about 45–100s';
+  const auto=api.autoTilesPerSec();
+  const autoPct=auto>0?Math.min(.022,.009 + Math.log10(1+auto)*.0022):0;
+  const eta=autoPct>0?Math.max(1,Math.ceil((b.hp/b.maxHp)/autoPct)):null;
+  $('#bossSub').textContent=eta?'Tap for faster kills · auto ETA ~'+eta+'s':'Tap the weed to damage it';
   $('#bossHp').style.width=Math.max(0,b.hp/b.maxHp*100)+'%';
-  $('#bossHpText').textContent=Math.ceil(b.hp)+' / '+b.maxHp+' HP · Reward '+api.money(b.reward);
+  $('#bossHpText').textContent=api.fmt(Math.ceil(b.hp))+' / '+api.fmt(b.maxHp)+' HP · Reward '+api.money(b.reward);
 }
 bossPlant.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();bossManualDamage()});
 
 function bossTick(){
   const S=api.state;
-  if(!S.boss && S.tiles >= (S.nextBossTiles||350)) startBoss();
+  if(!S.boss && Date.now()>=(S.nextBossAt||0) && (S.tiles||0)>=(S.nextBossTiles||500)) startBoss();
   if(S.boss){
     const auto=api.autoTilesPerSec();
     if(auto>0){
@@ -210,16 +237,16 @@ function drawWeather(t){
   const dt=Math.min(.05,(t-last)/1000);last=t;
   wx.clearRect(0,0,960,600);
   const type=api.state.weather&&api.state.weather.type||'Clear';
-  if(type==='Rain'){
+  if(type==='Rain'||type==='Cosmic Bloom'){
     wx.strokeStyle='rgba(200,225,255,.42)';wx.lineWidth=2;
     drops.forEach(d=>{d.y+=d.v*dt;d.x-=80*dt;if(d.y>620){d.y=-20;d.x=Math.random()*1000}if(d.x<-30)d.x=990;wx.beginPath();wx.moveTo(d.x,d.y);wx.lineTo(d.x-8,d.y+d.s);wx.stroke()});
     wx.fillStyle='rgba(55,95,140,.09)';wx.fillRect(0,0,960,600);
-  } else if(type==='Heatwave'){
+  } else if(type==='Heatwave'||type==='Meteor Shower'){
     const g=wx.createRadialGradient(820,70,10,820,70,260);g.addColorStop(0,'rgba(255,220,110,.25)');g.addColorStop(1,'rgba(255,130,40,0)');wx.fillStyle=g;wx.fillRect(0,0,960,600);
-  } else if(type==='Tailwind'){
+  } else if(type==='Tailwind'||type==='Solar Wind'){
     wx.strokeStyle='rgba(235,255,238,.28)';wx.lineWidth=2;
     motes.forEach(m=>{m.x+=180*dt;if(m.x>980)m.x=-20;const y=m.y+Math.sin(t/300+m.p)*8;wx.beginPath();wx.moveTo(m.x,y);wx.lineTo(m.x-24,y+4);wx.stroke()});
-  } else if(type==='Golden Hour'){
+  } else if(type==='Golden Hour'||type==='Eclipse'){
     wx.fillStyle='rgba(255,190,55,.07)';wx.fillRect(0,0,960,600);
     motes.forEach(m=>{m.y-=13*dt;if(m.y<-10)m.y=610;wx.globalAlpha=.35+.25*Math.sin(t/500+m.p);wx.fillStyle='#ffe680';wx.beginPath();wx.arc(m.x,m.y,m.r+1,0,Math.PI*2);wx.fill();wx.globalAlpha=1});
   }
