@@ -169,7 +169,29 @@ function fmt(n){
   const exp=Math.floor(Math.log10(a)), mant=a/Math.pow(10,exp);
   return sign+mant.toFixed(2)+'e'+exp;
 }
-function money(n){return '
+function money(n){return String.fromCharCode(36)+fmt(n)}
+function costAt(def,lvl){return def.base*Math.pow(def.scale,lvl)}
+function cost(def){const lvl=S.upgrades[def.id]||0;return Math.floor(costAt(def,lvl))}
+function batchCost(def,count){
+  const lvl=S.upgrades[def.id]||0;
+  if(count<=0)return 0;
+  const first=costAt(def,lvl);
+  return Math.floor(first*(Math.pow(def.scale,count)-1)/(def.scale-1));
+}
+function maxAffordable(def){
+  let total=0,count=0,lvl=S.upgrades[def.id]||0;
+  while(count<100){
+    const next=costAt(def,lvl+count);
+    if(total+next>S.cash)break;
+    total+=next;count++;
+  }
+  return count;
+}
+function repMult(){return 1 + Math.log10(1+Math.max(0,S.rep||0))*0.35}
+function cutValue(){const level=S.upgrades.grassValue||0, weather=(S.weather&&S.weather.valueMult)||1; return stages[S.stage].grass * Math.pow(1.20,level) * repMult() * (Date.now()<(S.ability.turboUntil||0)?3:1) * weather}
+function autoTilesPerSec(){
+  const u=S.upgrades, weather=(S.weather&&S.weather.autoMult)||1; return ((u.push||0)*1 + (u.electric||0)*4 + (u.rider||0)*14 + (u.robot||0)*45 + (u.drone||0)*150 + (u.fleet||0)*500) * weather;
+}
 function dps(){return autoTilesPerSec()*cutValue()}
 function companyValue(){return S.lifetime + Object.values(S.upgrades).reduce((a,b)=>a+b*100,0)}
 function currentStage(){let idx=0;for(let i=0;i<stages.length;i++) if(S.lifetime>=stages[i].value) idx=i;return idx}
@@ -424,7 +446,8 @@ window.NobodyMowsAPI = {
 };
 })();
 </script>
-<script src="visuals.js?v=2"></script>\n<script src="v3.js?v=3"></script>
+<script src="visuals.js?v=2"></script>
+<script src="v3.js?v=3"></script>
 </body>
 </html>
 +fmt(n)}
