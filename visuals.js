@@ -55,7 +55,12 @@
     rider:    {speed:130, size: 44, body:'#eeb52f', trim:'#2f2b21'},
     robot:    {speed:112, size: 34, body:'#b9c7cf', trim:'#222b30'},
     drone:    {speed:145, size: 36, body:'#7f8cff', trim:'#e4e7ff'},
-    fleet:    {speed:158, size: 48, body:'#ff6262', trim:'#242526'}
+    fleet:    {speed:158, size: 48, body:'#ff6262', trim:'#242526'},
+    terra:    {speed:170, size: 50, body:'#d96f43', trim:'#9ff0a5'},
+    orbital:  {speed:188, size: 39, body:'#68d5ff', trim:'#eafcff'},
+    quantum:  {speed:180, size: 40, body:'#b375ff', trim:'#f3e6ff'},
+    stellar:  {speed:205, size: 44, body:'#ffb347', trim:'#fff0b0'},
+    reality:  {speed:220, size: 48, body:'#ff65c7', trim:'#a9fff1'}
   };
 
   function parseLevel(name) {
@@ -76,7 +81,12 @@
       rider: parseLevel('Riding Mower'),
       robot: parseLevel('Robot Mower'),
       drone: parseLevel('Drone Mower'),
-      fleet: parseLevel('Mower Fleet')
+      fleet: parseLevel('Mower Fleet'),
+      terra: parseLevel('Terraformer Rover'),
+      orbital: parseLevel('Orbital Swarm'),
+      quantum: parseLevel('Quantum Trimmer'),
+      stellar: parseLevel('Stellar Harvester'),
+      reality: parseLevel('Reality Mower')
     };
     const out = [];
     const add = (type, count) => {
@@ -85,10 +95,15 @@
     if (u.push) add('push', Math.min(2, 1 + Math.floor((u.push - 1) / 4)));
     if (u.electric) add('electric', Math.min(2, 1 + Math.floor((u.electric - 1) / 4)));
     if (u.rider) add('rider', Math.min(2, 1 + Math.floor((u.rider - 1) / 3)));
-    if (u.robot) add('robot', Math.min(4, 1 + Math.floor((u.robot - 1) / 2)));
-    if (u.drone) add('drone', Math.min(3, 1 + Math.floor((u.drone - 1) / 2)));
-    if (u.fleet) add('fleet', Math.min(3, 1 + Math.floor((u.fleet - 1) / 2)));
-    return out.slice(0, 14);
+    if (u.robot) add('robot', Math.min(3, 1 + Math.floor((u.robot - 1) / 3)));
+    if (u.drone) add('drone', Math.min(2, 1 + Math.floor((u.drone - 1) / 3)));
+    if (u.fleet) add('fleet', Math.min(2, 1 + Math.floor((u.fleet - 1) / 3)));
+    if (u.terra) add('terra', Math.min(2, 1 + Math.floor((u.terra - 1) / 3)));
+    if (u.orbital) add('orbital', Math.min(2, 1 + Math.floor((u.orbital - 1) / 3)));
+    if (u.quantum) add('quantum', Math.min(2, 1 + Math.floor((u.quantum - 1) / 3)));
+    if (u.stellar) add('stellar', Math.min(2, 1 + Math.floor((u.stellar - 1) / 3)));
+    if (u.reality) add('reality', Math.min(2, 1 + Math.floor((u.reality - 1) / 3)));
+    return out.slice(-18);
   }
 
   function syncMachines() {
@@ -98,7 +113,7 @@
     lastPlan = sig;
     machines = p.map((type, i) => {
       const look = looks[type];
-      const row = i % 8;
+      const row = i % stageRows();
       const dir = i % 2 ? -1 : 1;
       return {
         type,
@@ -127,7 +142,12 @@
     if (name === 'Stadium') return 8;
     if (name === 'City Park') return 9;
     if (name === 'Moon Lawn') return 10;
-    return 6;
+    if (name === 'Mars Yard') return 10;
+    if (name === 'Orbital Garden') return 10;
+    if (name === 'Alien Golf Course') return 11;
+    if (name === 'Dyson Lawn') return 11;
+    if (name === 'End of the Universe') return 12;
+    return 10;
   }
 
   function popGrass(x, y, power) {
@@ -180,7 +200,7 @@
     c.save();
     c.translate(m.x, m.y);
 
-    if (m.type === 'drone') {
+    if (['drone','orbital','stellar'].includes(m.type)) {
       const bob = Math.sin(t / 150 + m.phase) * 4;
       c.translate(0, bob);
       c.fillStyle = 'rgba(0,0,0,.18)';
@@ -224,14 +244,14 @@
     c.ellipse(0, s * .48, s * .68, s * .20, 0, 0, Math.PI * 2);
     c.fill();
 
-    if (m.type === 'robot') {
+    if (['robot','quantum','reality'].includes(m.type)) {
       c.fillStyle = m.look.trim;
       c.beginPath(); c.arc(0, 0, s * .62, 0, Math.PI * 2); c.fill();
       c.fillStyle = m.look.body;
       c.beginPath(); c.arc(0, -2, s * .48, 0, Math.PI * 2); c.fill();
       c.fillStyle = '#77ff83';
       c.beginPath(); c.arc(s * .20, -s * .15, 3, 0, Math.PI * 2); c.fill();
-    } else if (m.type === 'rider' || m.type === 'fleet') {
+    } else if (['rider','fleet','terra'].includes(m.type)) {
       c.fillStyle = '#202321';
       c.fillRect(-s * .66, s * .20, s * .30, s * .25);
       c.fillRect(s * .36, s * .20, s * .30, s * .25);
@@ -273,7 +293,7 @@
     const rowH = fx.height / rows;
 
     for (const m of machines) {
-      if (m.type === 'drone') {
+      if (['drone','orbital','stellar'].includes(m.type)) {
         m.x += m.vx * dt;
         m.y += m.vy * dt;
         if (m.x < 25 || m.x > fx.width - 25) m.vx *= -1;
@@ -299,10 +319,10 @@
         }
         m.trailClock -= dt;
         if (m.trailClock <= 0 && m.x > 0 && m.x < fx.width) {
-          m.trailClock = m.type === 'fleet' ? .08 : m.type === 'rider' ? .11 : .16;
-          const width = m.type === 'fleet' ? 76 : m.type === 'rider' ? 58 : 40;
+          m.trailClock = ['stellar','reality'].includes(m.type) ? .06 : ['fleet','terra'].includes(m.type) ? .08 : m.type === 'rider' ? .11 : .16;
+          const width = ['stellar','reality'].includes(m.type) ? 88 : ['fleet','terra'].includes(m.type) ? 76 : m.type === 'rider' ? 58 : 40;
           addTrail(m.x - width / 2, m.y - rowH * .34, width, rowH * .68, m.dir);
-          popGrass(m.x, m.y + 10, m.type === 'fleet' ? .9 : m.type === 'rider' ? .7 : .38);
+          popGrass(m.x, m.y + 10, ['stellar','reality'].includes(m.type) ? 1.1 : ['fleet','terra'].includes(m.type) ? .9 : m.type === 'rider' ? .7 : .38);
         }
       }
 
@@ -385,6 +405,42 @@
       c.globalAlpha=.45;c.fillStyle='#79c778';c.beginPath();c.arc(w*.835,h*.105,14,0,Math.PI*2);c.fill();
       c.globalAlpha=.15;c.fillStyle='#d8d9d7';
       for(const [cx,cy,r] of [[.13,.38,38],[.30,.73,25],[.73,.40,45],[.87,.78,30]]){c.beginPath();c.arc(w*cx,h*cy,r,0,Math.PI*2);c.fill();}
+      c.globalAlpha=1;
+    } else if (name === 'Mars Yard') {
+      c.fillStyle='rgba(113,42,28,.64)';c.fillRect(0,0,w,h);
+      c.fillStyle='rgba(244,154,93,.38)';for(let i=0;i<28;i++){const rx=(i*173)%w,ry=(i*91)%h;c.beginPath();c.arc(rx,ry,5+(i%5)*3,0,Math.PI*2);c.fill();}
+      c.fillStyle='rgba(191,225,236,.72)';c.beginPath();c.arc(w*.20,h*.22,70,Math.PI,0);c.lineTo(w*.27,h*.22);c.lineTo(w*.13,h*.22);c.closePath();c.fill();
+      c.strokeStyle='rgba(105,214,255,.66)';c.lineWidth=4;c.stroke();
+      c.fillStyle='rgba(42,54,62,.86)';c.fillRect(w*.63,h*.18,120,10);
+      for(let i=0;i<4;i++){c.fillStyle=i%2?'#375d85':'#284866';c.fillRect(w*.63+i*30,h*.11,26,62);}
+      c.strokeStyle='rgba(255,194,146,.35)';c.lineWidth=2;for(let i=0;i<18;i++){const x=(t*.08+i*73)%w;c.beginPath();c.moveTo(x,20+i*27%h);c.lineTo(x+28,24+i*27%h);c.stroke();}
+    } else if (name === 'Orbital Garden') {
+      c.fillStyle='rgba(4,9,17,.86)';c.fillRect(0,0,w,h);
+      for(let i=0;i<70;i++){const sx=(i*149)%w,sy=(i*83)%h;c.globalAlpha=.35+(i%4)*.12;c.fillStyle='#fff';c.fillRect(sx,sy,2,2);}
+      c.globalAlpha=.8;c.fillStyle='#4287d6';c.beginPath();c.arc(w*.82,h*.74,150,0,Math.PI*2);c.fill();
+      c.globalAlpha=.35;c.fillStyle='#69c474';c.beginPath();c.arc(w*.78,h*.70,58,0,Math.PI*2);c.fill();
+      c.globalAlpha=1;c.fillStyle='rgba(190,210,220,.65)';c.fillRect(0,h*.14,w,12);c.fillRect(w*.12,0,12,h);
+      c.strokeStyle='rgba(125,233,255,.55)';c.lineWidth=3;c.strokeRect(w*.32,h*.18,w*.34,h*.18);
+      for(let i=0;i<5;i++){c.fillStyle='rgba(105,203,117,.72)';roundScene(w*.34+i*55,h*.21,42,65,8,true);}
+    } else if (name === 'Alien Golf Course') {
+      const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'rgba(48,25,82,.82)');g.addColorStop(1,'rgba(10,92,83,.72)');c.fillStyle=g;c.fillRect(0,0,w,h);
+      c.fillStyle='rgba(101,238,205,.42)';c.beginPath();c.ellipse(w*.18,h*.77,100,42,.1,0,Math.PI*2);c.fill();
+      c.fillStyle='rgba(218,107,255,.48)';c.beginPath();c.ellipse(w*.77,h*.27,95,52,-.2,0,Math.PI*2);c.fill();
+      c.strokeStyle='#b8ffef';c.lineWidth=4;c.beginPath();c.moveTo(w*.82,h*.13);c.lineTo(w*.82,h*.37);c.stroke();
+      c.fillStyle='#d781ff';c.beginPath();c.moveTo(w*.82,h*.13);c.lineTo(w*.90,h*.17);c.lineTo(w*.82,h*.23);c.closePath();c.fill();
+      const ux=w*.50+Math.sin(t/900)*90,uy=h*.12;c.fillStyle='rgba(175,230,255,.75)';c.beginPath();c.ellipse(ux,uy,45,14,0,0,Math.PI*2);c.fill();c.fillStyle='rgba(190,112,255,.65)';c.beginPath();c.ellipse(ux,uy-8,22,12,0,0,Math.PI*2);c.fill();
+    } else if (name === 'Dyson Lawn') {
+      c.fillStyle='rgba(22,14,8,.88)';c.fillRect(0,0,w,h);
+      const sun=c.createRadialGradient(w*.80,h*.18,8,w*.80,h*.18,115);sun.addColorStop(0,'rgba(255,248,184,.98)');sun.addColorStop(.35,'rgba(255,170,64,.75)');sun.addColorStop(1,'rgba(255,90,20,0)');c.fillStyle=sun;c.fillRect(0,0,w,h);
+      c.strokeStyle='rgba(255,192,88,.62)';c.lineWidth=15;c.beginPath();c.arc(w*.80,h*.18,145,.2,Math.PI*1.75);c.stroke();
+      c.strokeStyle='rgba(117,180,205,.58)';c.lineWidth=8;c.beginPath();c.arc(w*.80,h*.18,185,.55,Math.PI*1.45);c.stroke();
+      for(let i=0;i<8;i++){c.fillStyle=i%2?'rgba(255,190,78,.26)':'rgba(84,141,170,.30)';c.fillRect(i*w/8,h*.70,w/8-4,h*.22);}
+    } else if (name === 'End of the Universe') {
+      c.fillStyle='rgba(1,2,5,.94)';c.fillRect(0,0,w,h);
+      for(let i=0;i<40;i++){const fade=.08+.30*Math.abs(Math.sin(t/1200+i));c.globalAlpha=fade;c.fillStyle=i%5===0?'#ff8de1':'#b9d8ff';c.fillRect((i*211)%w,(i*97)%h,2+(i%3),2+(i%3));}
+      c.globalAlpha=.5;c.strokeStyle='#d56aff';c.lineWidth=2;for(let i=0;i<5;i++){c.beginPath();c.moveTo(w*(.12+i*.18),0);c.lineTo(w*(.18+i*.16),h*.42);c.lineTo(w*(.10+i*.18),h);c.stroke();}
+      c.globalAlpha=.30;c.fillStyle='#73fff0';c.beginPath();c.arc(w*.52,h*.50,80+Math.sin(t/420)*8,0,Math.PI*2);c.fill();
+      c.globalAlpha=.18;c.fillStyle='#000';c.beginPath();c.arc(w*.52,h*.50,58,0,Math.PI*2);c.fill();
       c.globalAlpha=1;
     }
 
