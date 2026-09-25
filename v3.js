@@ -157,7 +157,7 @@ function renderBoss(){
   if(!b){bossLayer.classList.remove('show');return}
   bossLayer.classList.add('show');
   $('#bossTitle').textContent=b.name;
-  $('#bossSub').textContent='Tap the weed · about 30 hits to finish · 8% crit chance';
+  $('#bossSub').textContent='Tap it for faster kills · auto mowers finish bosses in about 45–100s';
   $('#bossHp').style.width=Math.max(0,b.hp/b.maxHp*100)+'%';
   $('#bossHpText').textContent=Math.ceil(b.hp)+' / '+b.maxHp+' HP · Reward '+api.money(b.reward);
 }
@@ -169,9 +169,10 @@ function bossTick(){
   if(S.boss){
     const auto=api.autoTilesPerSec();
     if(auto>0){
-      // Automatic machines help, but cannot vaporize a boss instantly.
-      // Cap passive boss damage to under 1% max HP per second.
-      const autoDmg=Math.min(S.boss.maxHp*.009,Math.max(.25,Math.sqrt(auto)*.18));
+      // Idle-friendly boss balance:
+      // low automation takes roughly 80–100s, strong late-game setups around 45–60s.
+      const autoPct=Math.min(.022,.009 + Math.log10(1+auto)*.0022);
+      const autoDmg=Math.max(1,S.boss.maxHp*autoPct);
       damageBoss(autoDmg,false);
     }
     renderBoss();
