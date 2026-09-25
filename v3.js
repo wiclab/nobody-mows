@@ -106,16 +106,28 @@ function startBoss(){
 }
 function bossManualDamage(){
   const S=api.state;if(!S.boss)return;
+  const b=S.boss;
   const blade=S.upgrades&&S.upgrades.grassValue||0;
-  const dmg=Math.max(1,2+blade*2+Math.floor((S.rep||0)/3));
-  damageBoss(dmg,true);
+
+  // Keep bosses interactive even in late game.
+  // Reputation used to be added directly to damage, which made one click
+  // delete the boss once Reputation became huge.
+  const hitPct=.022 + Math.min(.012,blade*.00035);
+  const crit=Math.random()<.08;
+  const dmg=Math.max(1,Math.ceil(b.maxHp*hitPct*(crit?2.5:1)));
+  damageBoss(dmg,true,crit);
 }
-function damageBoss(amount,manual){
+function damageBoss(amount,manual,crit=false){
   const S=api.state;if(!S.boss)return;
   S.boss.hp=Math.max(0,S.boss.hp-amount);
   if(manual){
     bossCard.classList.remove('boss-hit'); void bossCard.offsetWidth; bossCard.classList.add('boss-hit');
-    const n=document.createElement('div');n.className='boss-dmg';n.textContent='-'+Math.round(amount);
+    const n=document.createElement('div');n.className='boss-dmg';
+    n.textContent=(crit?'CRIT ':'')+'-'+Math.round(amount);
+    if(crit){
+      n.style.fontSize='22px';
+      n.style.color='#ffd166';
+    }
     n.style.left=(45+Math.random()*10)+'%';n.style.top=(43+Math.random()*8)+'%';wrap.appendChild(n);setTimeout(()=>n.remove(),720);
   }
   if(S.boss.hp<=0) killBoss(); else renderBoss();
@@ -145,7 +157,7 @@ function renderBoss(){
   if(!b){bossLayer.classList.remove('show');return}
   bossLayer.classList.add('show');
   $('#bossTitle').textContent=b.name;
-  $('#bossSub').textContent='Tap the weed · Auto mowers also deal damage';
+  $('#bossSub').textContent='Tap the weed · about 30 hits to finish · 8% crit chance';
   $('#bossHp').style.width=Math.max(0,b.hp/b.maxHp*100)+'%';
   $('#bossHpText').textContent=Math.ceil(b.hp)+' / '+b.maxHp+' HP · Reward '+api.money(b.reward);
 }
@@ -156,7 +168,12 @@ function bossTick(){
   if(!S.boss && S.tiles >= (S.nextBossTiles||350)) startBoss();
   if(S.boss){
     const auto=api.autoTilesPerSec();
-    if(auto>0) damageBoss(Math.max(.25,auto*.06),false);
+    if(auto>0){
+      // Automatic machines help, but cannot vaporize a boss instantly.
+      // Cap passive boss damage to under 1% max HP per second.
+      const autoDmg=Math.min(S.boss.maxHp*.009,Math.max(.25,Math.sqrt(auto)*.18));
+      damageBoss(autoDmg,false);
+    }
     renderBoss();
   }
 }
