@@ -27,7 +27,7 @@ button{font:inherit}
 .statstrip{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.pill{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;white-space:nowrap}.pill strong{color:var(--accent)}
 .layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,.7fr);gap:16px}
 .card{background:linear-gradient(180deg,rgba(31,48,37,.98),rgba(19,30,23,.98));border:1px solid var(--line);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.22)}
-.gamecard{padding:14px;overflow:hidden}.hud{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}.stage{font-weight:800}.sub{color:var(--muted);font-size:13px}
+.gamecard{padding:14px;overflow:hidden}.hud{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}.stage{font-weight:800}.sub{color:var(--muted);font-size:13px}.stage-progress{width:min(390px,72vw);margin-top:7px}.stage-progress-label{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:10px;font-weight:800;margin-bottom:4px}.stage-progress-track{height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden;border:1px solid rgba(255,255,255,.07)}.stage-progress-track i{display:block;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#68be3e,#b8ee70);transition:width .35s}
 .canvaswrap{position:relative;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.10);background:#204325;touch-action:none;min-height:360px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),inset 0 -50px 80px rgba(0,0,0,.12),0 18px 42px rgba(0,0,0,.22)}
 canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;touch-action:none;background:#28572f}
 .toast{position:absolute;left:50%;top:18px;transform:translateX(-50%) translateY(-8px);background:rgba(8,12,9,.88);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.13);padding:10px 14px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -57,7 +57,14 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;
   <div class="layout">
     <section class="card gamecard">
       <div class="hud">
-        <div><div class="stage" id="stageName">Backyard</div><div class="sub" id="stageDesc">A suspiciously overgrown patch of grass.</div></div>
+        <div>
+          <div class="stage" id="stageName">Backyard</div>
+          <div class="sub" id="stageDesc">A suspiciously overgrown patch of grass.</div>
+          <div class="stage-progress">
+            <div class="stage-progress-label"><span id="nextStageText">Next area</span><span id="nextStagePct">0%</span></div>
+            <div class="stage-progress-track"><i id="nextStageBar"></i></div>
+          </div>
+        </div>
         <div class="sub">Company value: <b id="companyValue">$0</b></div>
       </div>
       <div class="canvaswrap" id="canvasWrap">
@@ -108,25 +115,35 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;
 const $ = s => document.querySelector(s);
 const canvas = $('#game'), ctx = canvas.getContext('2d');
 const SAVE_KEY = 'nobodyMowsSave_v1';
-const ECON_VERSION = 4;
+const ECON_VERSION = 5;
 const stages = [
   {name:'Backyard', desc:'A suspiciously overgrown patch of grass.', value:0, cols:6, rows:4, grass:1},
-  {name:'Suburban Lawn', desc:'The neighbors have started judging you.', value:3000, cols:9, rows:6, grass:1.8},
-  {name:'Golf Course', desc:'Tiny flags. Huge maintenance budget.', value:40000, cols:12, rows:7, grass:3.5},
-  {name:'Stadium', desc:'Now thousands of people care about stripes.', value:400000, cols:14, rows:8, grass:6.5},
-  {name:'City Park', desc:'Congratulations. You now mow public infrastructure.', value:4000000, cols:16, rows:9, grass:11},
-  {name:'Moon Lawn', desc:'There is no atmosphere. There is still grass.', value:35000000, cols:18, rows:10, grass:20}
+  {name:'Suburban Lawn', desc:'The neighbors have started judging you.', value:5000, cols:9, rows:6, grass:1.7},
+  {name:'Golf Course', desc:'Tiny flags. Huge maintenance budget.', value:60000, cols:12, rows:7, grass:3.0},
+  {name:'Stadium', desc:'Now thousands of people care about stripes.', value:700000, cols:14, rows:8, grass:5.5},
+  {name:'City Park', desc:'Congratulations. You now mow public infrastructure.', value:7000000, cols:16, rows:9, grass:10},
+  {name:'Moon Lawn', desc:'There is no atmosphere. There is still grass.', value:40000000, cols:18, rows:10, grass:18},
+  {name:'Mars Yard', desc:'Terraforming was invented for one reason: lawn care.', value:2000000000, cols:18, rows:10, grass:34},
+  {name:'Orbital Garden', desc:'Your lawn now has an orbital period.', value:60000000000, cols:18, rows:10, grass:60},
+  {name:'Alien Golf Course', desc:'Par is unknown. The grass is judging you.', value:2000000000000, cols:20, rows:11, grass:110},
+  {name:'Dyson Lawn', desc:'A star-powered solution to an extremely small problem.', value:80000000000000, cols:20, rows:11, grass:200},
+  {name:'End of the Universe', desc:'The stars are gone. The grass is not.', value:5000000000000000, cols:20, rows:12, grass:360}
 ];
 const upgradeDefs = [
   {id:'grassValue', name:'Sharper Blades', desc:'+20% value per cut', base:40, scale:1.68, unlock:0},
-  {id:'regrow', name:'Aggressive Fertilizer', desc:'Grass grows back faster', base:75, scale:1.72, unlock:0},
+  {id:'regrow', name:'Aggressive Fertilizer', desc:'Faster regrowth +2.5% idle efficiency', base:75, scale:1.72, unlock:0},
   {id:'push', name:'Push Mower', desc:'Automatically cuts 1 tile/sec', base:300, scale:1.78, unlock:0},
   {id:'electric', name:'Electric Mower', desc:'Automatically cuts 4 tiles/sec', base:2500, scale:1.84, unlock:1},
   {id:'rider', name:'Riding Mower', desc:'Automatically cuts 14 tiles/sec', base:18000, scale:1.88, unlock:1},
   {id:'robot', name:'Robot Mower', desc:'Automatically cuts 45 tiles/sec', base:150000, scale:1.92, unlock:2},
   {id:'drone', name:'Drone Mower', desc:'Automatically cuts 150 tiles/sec', base:1500000, scale:1.96, unlock:3},
   {id:'fleet', name:'Mower Fleet', desc:'Automatically cuts 500 tiles/sec', base:15000000, scale:2.0, unlock:4},
-  {id:'luck', name:'Suspicious Luck', desc:'More golden grass & found items', base:7000, scale:1.95, unlock:1}
+  {id:'luck', name:'Suspicious Luck', desc:'More golden grass & found items', base:7000, scale:1.95, unlock:1},
+  {id:'terra', name:'Terraformer Rover', desc:'Automatically cuts 2,000 tiles/sec', base:750000000, scale:2.04, unlock:6},
+  {id:'orbital', name:'Orbital Swarm', desc:'Automatically cuts 8,000 tiles/sec', base:20000000000, scale:2.08, unlock:7},
+  {id:'quantum', name:'Quantum Trimmer', desc:'Automatically cuts 32,000 tiles/sec', base:650000000000, scale:2.12, unlock:8},
+  {id:'stellar', name:'Stellar Harvester', desc:'Automatically cuts 120,000 tiles/sec', base:25000000000000, scale:2.16, unlock:9},
+  {id:'reality', name:'Reality Mower', desc:'Automatically cuts 500,000 tiles/sec', base:1500000000000000, scale:2.20, unlock:10}
 ];
 const missions = [
   {id:'m1', text:'Mow 300 tiles', target:300, stat:'tiles', reward:500},
@@ -134,7 +151,14 @@ const missions = [
   {id:'m3', text:'Reach a x10 combo', target:10, stat:'bestCombo', reward:10000},
   {id:'m4', text:'Find 5 weird items', target:5, stat:'items', reward:50000},
   {id:'m5', text:'Mow 25,000 tiles', target:25000, stat:'tiles', reward:250000},
-  {id:'m6', text:'Reach City Park', target:4, stat:'stage', reward:1000000}
+  {id:'m6', text:'Reach City Park', target:4, stat:'stage', reward:1000000},
+  {id:'m7', text:'Reach Moon Lawn', target:5, stat:'stage', reward:5000000},
+  {id:'m8', text:'Defeat 10 boss weeds', target:10, stat:'bossKills', reward:25000000},
+  {id:'m9', text:'Reach Mars Yard', target:6, stat:'stage', reward:150000000},
+  {id:'m10', text:'Reach Orbital Garden', target:7, stat:'stage', reward:3000000000},
+  {id:'m11', text:'Reach Alien Golf Course', target:8, stat:'stage', reward:100000000000},
+  {id:'m12', text:'Reach Dyson Lawn', target:9, stat:'stage', reward:4000000000000},
+  {id:'m13', text:'Reach the End of the Universe', target:10, stat:'stage', reward:250000000000000}
 ];
 const itemDefs = [
   {name:'Lost coin',rarity:'Common'},{name:'Golf ball',rarity:'Common'},{name:'Dog toy',rarity:'Common'},
@@ -142,7 +166,9 @@ const itemDefs = [
   {name:'Toy dinosaur',rarity:'Uncommon'},{name:'Broken smartwatch',rarity:'Uncommon'},{name:'Garden gnome tooth',rarity:'Uncommon'},
   {name:'Wedding ring',rarity:'Rare'},{name:'Silver spoon',rarity:'Rare'},{name:'Very angry snail',rarity:'Rare'},
   {name:'Meteor fragment',rarity:'Epic'},{name:'Ancient USB stick',rarity:'Epic'},{name:'Glowing acorn',rarity:'Epic'},
-  {name:'Alien parking ticket',rarity:'WTF'},{name:'Tiny lawn deed',rarity:'WTF'},{name:'Moon cheese coupon',rarity:'WTF'}
+  {name:'Alien parking ticket',rarity:'WTF'},{name:'Tiny lawn deed',rarity:'WTF'},{name:'Moon cheese coupon',rarity:'WTF'},
+  {name:'Red dust sample',rarity:'Uncommon'},{name:'Zero-G golf ball',rarity:'Rare'},{name:'Cracked space visor',rarity:'Rare'},
+  {name:'Alien flag pin',rarity:'Epic'},{name:'Dyson panel shard',rarity:'Epic'},{name:'Last grass seed',rarity:'WTF'}
 ];
 const weirdItems = itemDefs.map(x=>x.name);
 const baseState = () => ({
@@ -187,12 +213,18 @@ function maxAffordable(def){
   }
   return count;
 }
-function repMult(){return 1 + Math.log10(1+Math.max(0,S.rep||0))*0.35}
+function repMult(){return 1 + Math.log10(1+Math.max(0,S.rep||0))*0.50}
 function cutValue(){const level=S.upgrades.grassValue||0, weather=(S.weather&&S.weather.valueMult)||1; return stages[S.stage].grass * Math.pow(1.20,level) * repMult() * (Date.now()<(S.ability.turboUntil||0)?3:1) * weather}
 function autoTilesPerSec(){
-  const u=S.upgrades, weather=(S.weather&&S.weather.autoMult)||1; return ((u.push||0)*1 + (u.electric||0)*4 + (u.rider||0)*14 + (u.robot||0)*45 + (u.drone||0)*150 + (u.fleet||0)*500) * weather;
+  const u=S.upgrades, weather=(S.weather&&S.weather.autoMult)||1;
+  return ((u.push||0)*1 + (u.electric||0)*4 + (u.rider||0)*14 + (u.robot||0)*45 + (u.drone||0)*150 + (u.fleet||0)*500
+    + (u.terra||0)*2000 + (u.orbital||0)*8000 + (u.quantum||0)*32000 + (u.stellar||0)*120000 + (u.reality||0)*500000) * weather;
 }
-function dps(){return autoTilesPerSec()*cutValue()}
+function regrowEfficiency(){return 1+Math.min(1.5,(S.upgrades.regrow||0)*.025)}
+function dps(){
+  const surge=Date.now()<(S.ability.rainUntil||0)?1.25:1;
+  return autoTilesPerSec()*cutValue()*regrowEfficiency()*surge;
+}
 function companyValue(){return S.lifetime + Object.values(S.upgrades).reduce((a,b)=>a+b*100,0)}
 function currentStage(){let idx=0;for(let i=0;i<stages.length;i++) if(S.lifetime>=stages[i].value) idx=i;return idx}
 function regrowMs(){const weather=(S.weather&&S.weather.regrowMult)||1;return Math.max(700,9000*Math.pow(.86,S.upgrades.regrow||0)*weather)}
@@ -224,7 +256,7 @@ function cutTile(i, manual=true){
   if(manual){
     if(Date.now()<S.comboUntil) S.combo=Math.min(25,S.combo+1); else S.combo=1;
     S.comboUntil=Date.now()+1150; S.bestCombo=Math.max(S.bestCombo,S.combo); value*=1+(S.combo-1)*.08;
-    if(Math.random()<.008 + (S.upgrades.luck||0)*.002){
+    if(Math.random()<Math.min(.06,.008 + (S.upgrades.luck||0)*.002)){
       const item=weirdItems[Math.floor(Math.random()*weirdItems.length)]; S.items++; S.found[item]=(S.found[item]||0)+1; value*=5; toast('Found: '+item); log('Found '+item+' hiding in the lawn.');
     }
   }
@@ -516,11 +548,11 @@ function renderAbilities(){
   });
 }
 function renderPrestige(){
-  const cv=companyValue(), threshold=60000000, pct=Math.min(100,cv/threshold*100), btn=$('#prestigeBtn');$('#prestigeProgress').style.width=pct+'%';
+  const cv=companyValue(), threshold=75000000, pct=Math.min(100,cv/threshold*100), btn=$('#prestigeBtn');$('#prestigeProgress').style.width=pct+'%';
   const currentBonus=Math.round((repMult()-1)*100);
   if(cv>=threshold){
-    const gain=Math.max(1,Math.floor(Math.pow(cv/threshold,.35)*3));
-    const nextMult=1+Math.log10(1+S.rep+gain)*.35;
+    const gain=Math.max(1,Math.floor(3+Math.log10(1+cv/threshold)*4));
+    const nextMult=1+Math.log10(1+S.rep+gain)*.50;
     const nextBonus=Math.round((nextMult-1)*100);
     $('#prestigeText').textContent='Sell now for '+gain+' Reputation. Permanent income bonus: +'+currentBonus+'% → +'+nextBonus+'%.';
     btn.disabled=false;btn.textContent='Sell for '+gain+' Reputation';btn.onclick=()=>prestige(gain);
@@ -530,9 +562,21 @@ function renderPrestige(){
   }
 }
 function prestige(gain){if(!confirm('Sell the company and restart for '+gain+' Reputation?'))return;const rep=S.rep+gain,found=S.found,items=S.items,bossKills=S.bossKills||0;S=baseState();S.rep=rep;S.found=found;S.items=items;S.bossKills=bossKills;createLawn(true);log('Started over with '+fmt(rep)+' Reputation. Collection progress kept.');renderAll();save();}
+function renderStageProgress(){
+  const text=$('#nextStageText'), pctEl=$('#nextStagePct'), bar=$('#nextStageBar');
+  if(S.stage>=stages.length-1){
+    text.textContent='Final map reached · prestige or keep mowing';
+    pctEl.textContent='100%';bar.style.width='100%';return;
+  }
+  const here=stages[S.stage].value,next=stages[S.stage+1],span=Math.max(1,next.value-here);
+  const pct=Math.max(0,Math.min(100,(S.lifetime-here)/span*100));
+  text.textContent='Next: '+next.name+' · '+money(Math.max(0,next.value-S.lifetime))+' to go';
+  pctEl.textContent=Math.floor(pct)+'%';
+  bar.style.width=pct+'%';
+}
 function renderAll(){
   $('#cash').textContent=money(S.cash);$('#dps').textContent=money(dps());$('#rep').textContent=fmt(S.rep);$('#companyValue').textContent=money(companyValue());$('#stageName').textContent=stages[S.stage].name;$('#stageDesc').textContent=stages[S.stage].desc;$('#combo').textContent=(Date.now()<S.comboUntil&&S.combo>1)?'COMBO x'+S.combo:'';
-  renderUpgrades();renderMissions();renderStats();renderAbilities();renderPrestige();
+  renderStageProgress();renderUpgrades();renderMissions();renderStats();renderAbilities();renderPrestige();
 }
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
 function log(msg){
@@ -551,24 +595,36 @@ function save(){S.lastSave=Date.now();S.econVersion=ECON_VERSION;localStorage.se
 function migrateEconomy(raw){
   const old=Object.assign(baseState(),raw||{});
   if((old.econVersion||0)>=ECON_VERSION)return old;
-  const stage=Math.max(0,Math.min(stages.length-1,Number(old.stage)||0));
+
+  // Balance v5: preserve the old map, collection and boss history,
+  // but compress legacy test-save inflation so the new maps are not skipped instantly.
+  const legacyStage=Math.max(0,Math.min(5,Number(old.stage)||0));
   const migrated=Object.assign(baseState(),old);
   migrated.econVersion=ECON_VERSION;
-  migrated.stage=stage;
-  const floorValue=stages[stage].value;
-  migrated.lifetime=stage===0?Math.min(Number(old.lifetime)||0,2500):Math.max(floorValue,Math.round(floorValue*1.15));
-  migrated.cash=Math.max(0,Math.round(migrated.lifetime*.12));
-  migrated.rep=Math.min(60,Math.max(0,Math.round(Math.log10(1+Math.max(0,Number(old.rep)||0))*4)));
+  migrated.stage=legacyStage;
+
+  const floorValue=stages[legacyStage].value;
+  migrated.lifetime=legacyStage===0?Math.min(Number(old.lifetime)||0,4500):Math.max(floorValue,Math.round(floorValue*1.18));
+  migrated.cash=Math.max(0,Math.round(migrated.lifetime*.15));
+
+  const rawRep=Math.max(0,Number(old.rep)||0);
+  migrated.rep=rawRep<=500?rawRep:Math.min(80,Math.round(Math.log10(1+rawRep)*4));
+
   const nextUp={};
   Object.entries(old.upgrades||{}).forEach(([k,v])=>{
     const n=Math.max(0,Number(v)||0);
-    const cap=(k==='grassValue'||k==='regrow')?18:12;
-    nextUp[k]=Math.min(cap,Math.round(Math.log2(1+n)*2));
+    if(['terra','orbital','quantum','stellar','reality'].includes(k)){nextUp[k]=0;return;}
+    if(n<=30){nextUp[k]=n;return;}
+    const cap=(k==='grassValue'||k==='regrow'||k==='luck')?30:24;
+    nextUp[k]=Math.min(cap,Math.round(18+Math.log2(Math.max(1,n/30))*3));
   });
   migrated.upgrades=nextUp;
-  migrated.weather=null;migrated.boss=null;
+
+  migrated.weather=null;
+  migrated.boss=null;
   migrated.nextWeatherAt=Date.now()+30000;
-  migrated.nextBossTiles=(Number(migrated.tiles)||0)+500;
+  migrated.nextBossAt=Date.now()+90000;
+  migrated.nextBossTiles=(Number(migrated.tiles)||0)+800;
   migrated._economyMigrated=true;
   return migrated;
 }
@@ -590,11 +646,19 @@ function setupOffline(){
       +(parsed.upgrades?.rider||0)*14
       +(parsed.upgrades?.robot||0)*45
       +(parsed.upgrades?.drone||0)*150
-      +(parsed.upgrades?.fleet||0)*500;
+      +(parsed.upgrades?.fleet||0)*500
+      +(parsed.upgrades?.terra||0)*2000
+      +(parsed.upgrades?.orbital||0)*8000
+      +(parsed.upgrades?.quantum||0)*32000
+      +(parsed.upgrades?.stellar||0)*120000
+      +(parsed.upgrades?.reality||0)*500000;
+    const rep=1+Math.log10(1+Math.max(0,parsed.rep||0))*.50;
+    const regrowEff=1+Math.min(1.5,(parsed.upgrades?.regrow||0)*.025);
     const income=auto
-      * stages[parsed.stage||0].grass
+      * stages[Math.min(stages.length-1,parsed.stage||0)].grass
       * Math.pow(1.20,parsed.upgrades?.grassValue||0)
-      * (1+Math.log10(1+Math.max(0,parsed.rep||0))*.35)
+      * rep
+      * regrowEff
       * elapsed
       * .5;
     if(income>0){
@@ -641,20 +705,21 @@ setInterval(()=>{
   if(Date.now()-S.lastEvent>45000 && Math.random()<.04){
     S.lastEvent=Date.now();
     const event=Math.random();
+    const seconds=event<.5?12:25;
+    const bonus=Math.max(cutValue()*100,dps()*seconds);
+    S.cash+=bonus;S.lifetime+=bonus;
     if(event<.5){
-      S.ability.rainUntil=Date.now()+15000;
-      toast('Random rain! Grass grows faster.');
-      log('A random rain shower showed up.');
+      toast('Rush mowing contract! +'+money(bonus));
+      log('A rush contract paid '+money(bonus)+'.');
     }else{
-      const bonus=cutValue()*500;
-      S.cash+=bonus;S.lifetime+=bonus;
-      toast('Neighbor paid for an emergency mow!');
-      log('Emergency mowing job paid '+money(bonus)+'.');
+      toast('Ridiculous landscaping bonus! +'+money(bonus));
+      log('Someone paid '+money(bonus)+' for extremely urgent grass.');
     }
+    updateStage();
   }
   checkMissions();renderAll();
 },1000);
-setInterval(save,10000);window.addEventListener('beforeunload',save);requestAnimationFrame(draw);renderAll();if(S._economyMigrated){toast('Economy rebalanced — giant numbers compressed.');log('Economy v4 normalized the old test save while keeping stage, collection and core progress.');delete S._economyMigrated;save();}
+setInterval(save,10000);window.addEventListener('beforeunload',save);requestAnimationFrame(draw);renderAll();if(S._economyMigrated){toast('Balance v5 applied — legacy inflation normalized.');log('Balance v5 kept your map, collection and boss history while normalizing old test-save inflation.');delete S._economyMigrated;save();}
 
 window.NobodyMowsAPI = {
   get state(){return S},
@@ -665,6 +730,7 @@ window.NobodyMowsAPI = {
   fmt:fmt,
   cutValue:cutValue,
   autoTilesPerSec:autoTilesPerSec,
+  dps:dps,
   renderAll:renderAll,
   toast:toast,
   log:log,
@@ -672,7 +738,7 @@ window.NobodyMowsAPI = {
 };
 })();
 </script>
-<script src="visuals.js?v=6"></script>
-<script src="v3.js?v=8"></script>
+<script src="visuals.js?v=10"></script>
+<script src="v3.js?v=10"></script>
 </body>
 </html>
