@@ -97,6 +97,17 @@
     return 0;
   }
 
+  function machineLevel(type){
+    const map={push:'push',electric:'electric',rider:'rider',robot:'robot',drone:'drone',fleet:'fleet',terra:'terra',orbital:'orbital',quantum:'quantum',stellar:'stellar',reality:'reality'};
+    return Number((api.state.upgrades||{})[map[type]]||0);
+  }
+  function evolutionTier(level){
+    if(level>=20)return 3;
+    if(level>=10)return 2;
+    if(level>=5)return 1;
+    return 0;
+  }
+
   function plan() {
     const u = {
       push: parseLevel('Push Mower'),
@@ -131,16 +142,19 @@
 
   function syncMachines() {
     const p = plan();
-    const sig = p.join(',')+'|'+((api.state&&api.state.stage)||0);
+    const sig = p.join(',')+'|'+((api.state&&api.state.stage)||0)+'|'+JSON.stringify((api.state&&api.state.upgrades)||{});
     if (sig === lastPlan) return;
     lastPlan = sig;
     machines = p.map((type, i) => {
-      const look = looks[type];
+      const base=looks[type],level=machineLevel(type),tier=evolutionTier(level);
+      const look=Object.assign({},base,{size:base.size+tier*3,speed:base.speed*(1+tier*.05)});
       const row = i % stageRows();
       const dir = i % 2 ? -1 : 1;
       return {
         type,
         look,
+        level,
+        tier,
         x: dir > 0 ? -55 : fx.width + 55,
         y: 55 + row * 62,
         row,
@@ -153,7 +167,8 @@
         cashClock: Math.random()
       };
     });
-    badge.textContent = 'Machines on field: ' + machines.length;
+    const bestTier=machines.reduce((a,b)=>Math.max(a,b.tier||0),0);
+    badge.textContent = 'Machines on field: ' + machines.length + (bestTier?' · Best Mk '+(bestTier+1):'');
     if (machines.length) popMoney(110, 80, 'AUTO MOWERS ONLINE', 1.05);
   }
 
@@ -223,7 +238,25 @@
     c.save();
     c.translate(m.x, m.y);
     c.shadowColor = m.look.body;
-    c.shadowBlur = 10;
+    c.shadowBlur = 10 + (m.tier||0)*5;
+
+    // Visual evolution tiers: Lv5 Mk II, Lv10 Mk III, Lv20 Mk IV.
+    if((m.tier||0)>0){
+      c.save();
+      c.globalAlpha=.20+.07*m.tier;
+      c.strokeStyle=m.tier>=3?'#fff3a8':m.tier===2?'#d7b6ff':'#b8f0ff';
+      c.lineWidth=2+m.tier;
+      c.beginPath();c.arc(0,0,s*(.78+.08*m.tier),0,Math.PI*2);c.stroke();
+      if(m.tier>=2){
+        const a=t/330+m.phase;
+        for(let q=0;q<m.tier+1;q++){
+          const aa=a+q*Math.PI*2/(m.tier+1);
+          c.fillStyle=m.tier>=3?'#ffe37a':'#bca1ff';
+          c.beginPath();c.arc(Math.cos(aa)*s*.85,Math.sin(aa)*s*.50,2.3+m.tier*.5,0,Math.PI*2);c.fill();
+        }
+      }
+      c.restore();
+    }
 
     if (['drone','orbital','stellar'].includes(m.type)) {
       const bob = Math.sin(t / 150 + m.phase) * 4;
@@ -300,6 +333,15 @@
       c.strokeStyle = '#e7ece8';
       c.lineWidth = 3;
       c.beginPath(); c.moveTo(-s * .40, -s * .05); c.lineTo(-s * .67, -s * .82); c.lineTo(-s * .88, -s * .84); c.stroke();
+    }
+
+    if((m.tier||0)>0){
+      c.save();
+      c.scale(m.dir,1);
+      c.shadowBlur=0;
+      c.fillStyle=m.tier>=3?'#fff0a8':m.tier===2?'#d8b7ff':'#c8f2ff';
+      for(let i=0;i<m.tier;i++)c.fillRect(-s*.23+i*s*.16,-s*.38,s*.09,s*.11);
+      c.restore();
     }
     c.restore();
   }
