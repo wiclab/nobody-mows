@@ -316,10 +316,89 @@
     if (flash > 0) flash = Math.max(0, flash - dt * 2.5);
   }
 
+  function overlayTree(x, y, r) {
+    c.save();
+    c.fillStyle = 'rgba(64,42,24,.75)';
+    c.fillRect(x-r*.08, y, r*.16, r*.75);
+    c.shadowColor = 'rgba(0,0,0,.25)';
+    c.shadowBlur = 12;
+    c.fillStyle = '#2f6f39';
+    c.beginPath(); c.arc(x, y-r*.12, r*.36, 0, Math.PI*2); c.fill();
+    c.beginPath(); c.arc(x-r*.22, y+r*.04, r*.28, 0, Math.PI*2); c.fill();
+    c.beginPath(); c.arc(x+r*.22, y+r*.04, r*.28, 0, Math.PI*2); c.fill();
+    c.shadowBlur = 0;
+    c.fillStyle = 'rgba(192,239,126,.16)';
+    c.beginPath(); c.arc(x-r*.08, y-r*.22, r*.17, 0, Math.PI*2); c.fill();
+    c.restore();
+  }
+
+  function roundScene(x,y,w,h,r,fill) {
+    const rr=Math.min(r,w/2,h/2);
+    c.beginPath(); c.moveTo(x+rr,y); c.arcTo(x+w,y,x+w,y+h,rr); c.arcTo(x+w,y+h,x,y+h,rr); c.arcTo(x,y+h,x,y,rr); c.arcTo(x,y,x+w,y,rr); c.closePath();
+    if(fill)c.fill();
+  }
+
+  function drawOverlayScenery(t) {
+    const name = ((document.getElementById('stageName') || {}).textContent || '').trim();
+    const w=fx.width,h=fx.height;
+    c.save();
+
+    if (name === 'Backyard') {
+      c.fillStyle='rgba(118,82,49,.88)'; c.fillRect(0,0,w,18); c.fillRect(0,h-14,w,14);
+      for(let x=12;x<w;x+=70){c.fillStyle='rgba(230,198,145,.72)';c.fillRect(x,2,9,37);}
+      c.fillStyle='rgba(188,148,93,.92)'; roundScene(w*.73,h*.70,w*.22,h*.20,18,true);
+      c.strokeStyle='rgba(67,133,235,.72)';c.lineWidth=6;c.beginPath();c.arc(w*.15,h*.79,45,0,Math.PI*1.55);c.stroke();
+      overlayTree(w*.90,h*.19,58);
+    } else if (name === 'Suburban Lawn') {
+      c.fillStyle='rgba(194,188,176,.94)';c.fillRect(w*.57,0,88,h);
+      c.fillStyle='rgba(111,111,108,.96)';c.fillRect(w*.595,0,42,h);
+      c.fillStyle='rgba(218,210,194,.96)';c.fillRect(0,h*.79,w,48);
+      c.fillStyle='rgba(95,123,132,.95)';c.fillRect(w*.16,h*.16,9,70);
+      c.fillStyle='#d65a57';roundScene(w*.135,h*.15,46,21,5,true);
+      for(let i=0;i<4;i++){c.fillStyle='#39733b';c.beginPath();c.arc(62+i*54,62+(i%2)*6,19,0,Math.PI*2);c.fill();}
+    } else if (name === 'Golf Course') {
+      c.fillStyle='rgba(222,201,139,.96)';c.beginPath();c.ellipse(w*.77,h*.29,96,53,-.18,0,Math.PI*2);c.fill();
+      c.fillStyle='rgba(91,172,211,.72)';c.beginPath();c.ellipse(w*.18,h*.80,90,40,.10,0,Math.PI*2);c.fill();
+      c.strokeStyle='rgba(255,255,255,.88)';c.lineWidth=4;c.beginPath();c.moveTo(w*.82,h*.12);c.lineTo(w*.82,h*.37);c.stroke();
+      c.fillStyle='#ffffff';c.beginPath();c.moveTo(w*.82,h*.12);c.lineTo(w*.89,h*.16);c.lineTo(w*.82,h*.22);c.closePath();c.fill();
+      c.fillStyle='#f2d15c';c.beginPath();c.arc(w*.43,h*.18,7,0,Math.PI*2);c.arc(w*.47,h*.18,7,0,Math.PI*2);c.fill();
+    } else if (name === 'Stadium') {
+      c.fillStyle='rgba(19,31,45,.84)';c.fillRect(0,0,w,62);c.fillRect(0,h-42,w,42);
+      for(let i=0;i<32;i++){c.fillStyle=i%3===0?'#f2c95f':i%3===1?'#e95a5a':'#77a9dd';c.fillRect(i*(w/32)+2,10,w/32-5,9);}
+      c.strokeStyle='rgba(255,255,255,.76)';c.lineWidth=4;c.strokeRect(25,55,w-50,h-105);
+      c.beginPath();c.moveTo(w/2,55);c.lineTo(w/2,h-50);c.stroke();
+      c.beginPath();c.arc(w/2,h/2,58,0,Math.PI*2);c.stroke();
+    } else if (name === 'City Park') {
+      // Strong contrast on purpose: this was the stage that still looked flat.
+      c.fillStyle='rgba(211,194,157,.94)';c.fillRect(w*.17,0,72,h);c.fillRect(w*.68,0,64,h);
+      c.fillStyle='rgba(103,184,211,.78)';c.beginPath();c.ellipse(w*.83,h*.22,82,50,-.12,0,Math.PI*2);c.fill();
+      c.strokeStyle='rgba(218,245,255,.46)';c.lineWidth=3;c.beginPath();c.ellipse(w*.83,h*.22,64,35,-.12,0,Math.PI*2);c.stroke();
+      c.fillStyle='#7a593d';c.fillRect(w*.31,h*.67,55,8);c.fillRect(w*.31,h*.75,55,8);c.fillRect(w*.32,h*.67,6,30);c.fillRect(w*.36,h*.67,6,30);
+      overlayTree(w*.08,h*.25,62);overlayTree(w*.92,h*.67,66);overlayTree(w*.54,h*.13,48);
+      c.fillStyle='rgba(255,239,169,.88)';c.fillRect(w*.61,h*.09,5,52);c.beginPath();c.arc(w*.6125,h*.085,10,0,Math.PI*2);c.fill();
+      const dogX=(t*.020)%(w+90)-45,dogY=h*.86;
+      c.fillStyle='rgba(44,48,39,.52)';c.fillRect(dogX,dogY,22,9);c.fillRect(dogX+16,dogY-7,11,9);
+    } else if (name === 'Moon Lawn') {
+      c.fillStyle='rgba(6,10,20,.76)';c.fillRect(0,0,w,h*.25);
+      for(let i=0;i<60;i++){const sx=(i*137)%w,sy=(i*71)%(h*.24);c.globalAlpha=.35+(i%4)*.14;c.fillStyle='#fff';c.fillRect(sx,sy,2+(i%2),2+(i%2));}
+      c.globalAlpha=.85;c.fillStyle='#6fa8ee';c.beginPath();c.arc(w*.84,h*.11,34,0,Math.PI*2);c.fill();
+      c.globalAlpha=.45;c.fillStyle='#79c778';c.beginPath();c.arc(w*.835,h*.105,14,0,Math.PI*2);c.fill();
+      c.globalAlpha=.15;c.fillStyle='#d8d9d7';
+      for(const [cx,cy,r] of [[.13,.38,38],[.30,.73,25],[.73,.40,45],[.87,.78,30]]){c.beginPath();c.arc(w*cx,h*cy,r,0,Math.PI*2);c.fill();}
+      c.globalAlpha=1;
+    }
+
+    // Slight glass badge so you can immediately tell the new scene layer is loaded.
+    c.fillStyle='rgba(5,10,7,.58)';roundScene(14,14,170,31,12,true);
+    c.fillStyle='rgba(255,255,255,.94)';c.font='800 14px system-ui,sans-serif';c.textAlign='left';c.fillText(name || 'Lawn',28,35);
+    c.restore();
+  }
+
   function draw(t) {
     c.clearRect(0, 0, fx.width, fx.height);
 
     const now = performance.now();
+    drawOverlayScenery(t);
 
     trails = trails.filter(p => now - p.born < p.life);
     trails.forEach(p => {
