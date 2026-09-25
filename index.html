@@ -33,7 +33,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;
 .toast{position:absolute;left:50%;top:18px;transform:translateX(-50%) translateY(-8px);background:rgba(8,12,9,.88);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.13);padding:10px 14px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .combo{position:absolute;right:14px;bottom:12px;font-weight:900;font-size:clamp(18px,4vw,34px);text-shadow:0 4px 18px rgba(0,0,0,.35);opacity:.9}
 .actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.action{border:0;border-radius:14px;padding:11px 8px;background:#263b2d;color:white;font-weight:800;cursor:pointer;border:1px solid var(--line)}.action:disabled{opacity:.4;cursor:not-allowed}.action small{display:block;color:var(--muted);font-weight:600;margin-top:2px}
-.sidebar{display:grid;gap:12px}.section{padding:14px}.section h2{margin:0 0 10px;font-size:17px}.upgrade{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:14px;padding:11px;margin:8px 0}.upgrade b{display:block;font-size:14px}.upgrade span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.buy{border:0;background:linear-gradient(135deg,var(--accent),#6bcf3f);color:#0b160d;padding:9px 11px;border-radius:12px;font-weight:900;cursor:pointer;min-width:86px}.buy:disabled{filter:grayscale(1);opacity:.45;cursor:not-allowed}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px}.tab{border:1px solid var(--line);background:transparent;color:var(--muted);padding:9px;border-radius:12px;font-weight:800;cursor:pointer}.tab.active{background:#294432;color:white}.tabpanel{display:none}.tabpanel.active{display:block}
+.sidebar{display:grid;gap:12px}.section{padding:14px}.section h2{margin:0 0 10px;font-size:17px}.upgrade{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:14px;padding:11px;margin:8px 0}.upgrade b{display:block;font-size:14px}.upgrade span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.buy{border:0;background:linear-gradient(135deg,var(--accent),#6bcf3f);color:#0b160d;padding:9px 11px;border-radius:12px;font-weight:900;cursor:pointer;min-width:86px;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.buy:disabled{filter:grayscale(1);opacity:.45;cursor:not-allowed}.buy-modes{display:flex;gap:6px;align-items:center;justify-content:space-between;margin:0 0 10px}.buy-modes .mode{border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;cursor:pointer}.buy-modes .mode.active{background:#355d3f;color:white;border-color:rgba(155,225,93,.5)}.balance-note{font-size:11px;color:var(--muted);margin:-3px 0 10px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px}.tab{border:1px solid var(--line);background:transparent;color:var(--muted);padding:9px;border-radius:12px;font-weight:800;cursor:pointer}.tab.active{background:#294432;color:white}.tabpanel{display:none}.tabpanel.active{display:block}
 .progress{height:9px;background:#0d150f;border-radius:99px;overflow:hidden;border:1px solid var(--line);margin-top:8px}.progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .25s}
 .mission{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0}.mission.done{border-color:rgba(155,225,93,.65);background:rgba(155,225,93,.08)}
 .log{max-height:190px;overflow:auto;font-size:12px;color:var(--muted);line-height:1.55}.log div{padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.05)}
@@ -85,7 +85,7 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;
       </section>
       <section class="card section prestige" id="prestigeBox">
         <h2>Sell the Lawn Business</h2>
-        <div class="sub">Reset cash and equipment for permanent Reputation. Each Reputation gives +10% all income.</div>
+        <div class="sub">Reset cash and equipment for permanent Reputation. Reputation now uses a soft-cap so numbers stay sane.</div>
         <div class="progress"><i id="prestigeProgress"></i></div>
         <div class="sub" id="prestigeText" style="margin-top:8px">Reach $25M company value to prestige.</div>
         <button class="buy" id="prestigeBtn" disabled>Sell Company</button>
@@ -108,24 +108,25 @@ canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;
 const $ = s => document.querySelector(s);
 const canvas = $('#game'), ctx = canvas.getContext('2d');
 const SAVE_KEY = 'nobodyMowsSave_v1';
+const ECON_VERSION = 4;
 const stages = [
   {name:'Backyard', desc:'A suspiciously overgrown patch of grass.', value:0, cols:6, rows:4, grass:1},
-  {name:'Suburban Lawn', desc:'The neighbors have started judging you.', value:5000, cols:9, rows:6, grass:2},
-  {name:'Golf Course', desc:'Tiny flags. Huge maintenance budget.', value:75000, cols:12, rows:7, grass:4},
-  {name:'Stadium', desc:'Now thousands of people care about stripes.', value:750000, cols:14, rows:8, grass:8},
-  {name:'City Park', desc:'Congratulations. You now mow public infrastructure.', value:5000000, cols:16, rows:9, grass:16},
-  {name:'Moon Lawn', desc:'There is no atmosphere. There is still grass.', value:25000000, cols:18, rows:10, grass:35}
+  {name:'Suburban Lawn', desc:'The neighbors have started judging you.', value:3000, cols:9, rows:6, grass:1.8},
+  {name:'Golf Course', desc:'Tiny flags. Huge maintenance budget.', value:40000, cols:12, rows:7, grass:3.5},
+  {name:'Stadium', desc:'Now thousands of people care about stripes.', value:400000, cols:14, rows:8, grass:6.5},
+  {name:'City Park', desc:'Congratulations. You now mow public infrastructure.', value:4000000, cols:16, rows:9, grass:11},
+  {name:'Moon Lawn', desc:'There is no atmosphere. There is still grass.', value:35000000, cols:18, rows:10, grass:20}
 ];
 const upgradeDefs = [
-  {id:'grassValue', name:'Sharper Blades', desc:'+35% value per cut', base:35, scale:1.55, unlock:0},
-  {id:'regrow', name:'Aggressive Fertilizer', desc:'Grass grows back faster', base:60, scale:1.65, unlock:0},
-  {id:'push', name:'Push Mower', desc:'Automatically cuts 1 tile/sec', base:250, scale:1.72, unlock:0},
-  {id:'electric', name:'Electric Mower', desc:'Automatically cuts 5 tiles/sec', base:1800, scale:1.78, unlock:1},
-  {id:'rider', name:'Riding Mower', desc:'Automatically cuts 18 tiles/sec', base:12000, scale:1.82, unlock:1},
-  {id:'robot', name:'Robot Mower', desc:'Automatically cuts 65 tiles/sec', base:90000, scale:1.86, unlock:2},
-  {id:'drone', name:'Drone Mower', desc:'Automatically cuts 220 tiles/sec', base:700000, scale:1.9, unlock:3},
-  {id:'fleet', name:'Mower Fleet', desc:'Automatically cuts 900 tiles/sec', base:5000000, scale:1.94, unlock:4},
-  {id:'luck', name:'Suspicious Luck', desc:'More golden grass & found items', base:5000, scale:1.8, unlock:1}
+  {id:'grassValue', name:'Sharper Blades', desc:'+20% value per cut', base:40, scale:1.68, unlock:0},
+  {id:'regrow', name:'Aggressive Fertilizer', desc:'Grass grows back faster', base:75, scale:1.72, unlock:0},
+  {id:'push', name:'Push Mower', desc:'Automatically cuts 1 tile/sec', base:300, scale:1.78, unlock:0},
+  {id:'electric', name:'Electric Mower', desc:'Automatically cuts 4 tiles/sec', base:2500, scale:1.84, unlock:1},
+  {id:'rider', name:'Riding Mower', desc:'Automatically cuts 14 tiles/sec', base:18000, scale:1.88, unlock:1},
+  {id:'robot', name:'Robot Mower', desc:'Automatically cuts 45 tiles/sec', base:150000, scale:1.92, unlock:2},
+  {id:'drone', name:'Drone Mower', desc:'Automatically cuts 150 tiles/sec', base:1500000, scale:1.96, unlock:3},
+  {id:'fleet', name:'Mower Fleet', desc:'Automatically cuts 500 tiles/sec', base:15000000, scale:2.0, unlock:4},
+  {id:'luck', name:'Suspicious Luck', desc:'More golden grass & found items', base:7000, scale:1.95, unlock:1}
 ];
 const missions = [
   {id:'m1', text:'Mow 300 tiles', target:300, stat:'tiles', reward:500},
@@ -145,27 +146,309 @@ const itemDefs = [
 ];
 const weirdItems = itemDefs.map(x=>x.name);
 const baseState = () => ({
-  cash:0,lifetime:0,tiles:0,items:0,bestCombo:1,rep:0,stage:0,upgrades:{},missions:{},found:{},
+  cash:0,lifetime:0,tiles:0,items:0,bestCombo:1,rep:0,stage:0,upgrades:{},missions:{},found:{},econVersion:ECON_VERSION,
   lastSave:Date.now(), combo:1, comboUntil:0, ability:{turboUntil:0,rainUntil:0,turboCd:0,rainCd:0,perfectCd:0}, lastEvent:0
 });
 let S = load();
 let lawn = [], particles = [], mowers = [];
 let pointerDown = false, lastPointerCell = '';
 let offlinePending = 0;
+let buyMode = 1;
 
 function fmt(n){
   if(!isFinite(n)) return '∞';
-  const a=Math.abs(n); if(a<1000) return Math.floor(n).toLocaleString();
-  const units=[['K',1e3],['M',1e6],['B',1e9],['T',1e12],['Qa',1e15]];
-  for(let i=units.length-1;i>=0;i--) if(a>=units[i][1]) return (n/units[i][1]).toFixed(a/units[i][1]>=100?0:a/units[i][1]>=10?1:2)+units[i][0];
-  return n.toFixed(0);
+  const sign=n<0?'-':'', a=Math.abs(n);
+  if(a<1000) return sign+Math.floor(a).toLocaleString();
+  const units=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc','Ud','Dd','Td','Qad','Qid','Sxd','Spd','Ocd','Nod','Vg'];
+  const tier=Math.floor(Math.log10(a)/3);
+  if(tier<units.length){
+    const scaled=a/Math.pow(1000,tier);
+    const digits=scaled>=100?0:scaled>=10?1:2;
+    return sign+scaled.toFixed(digits)+units[tier];
+  }
+  const exp=Math.floor(Math.log10(a)), mant=a/Math.pow(10,exp);
+  return sign+mant.toFixed(2)+'e'+exp;
 }
-function money(n){return '$'+fmt(n)}
-function cost(def){const lvl=S.upgrades[def.id]||0;return Math.floor(def.base*Math.pow(def.scale,lvl))}
-function repMult(){return 1 + S.rep*0.10}
-function cutValue(){const level=S.upgrades.grassValue||0, weather=(S.weather&&S.weather.valueMult)||1; return stages[S.stage].grass * Math.pow(1.35,level) * repMult() * (Date.now()<(S.ability.turboUntil||0)?3:1) * weather}
+function money(n){return '
+function dps(){return autoTilesPerSec()*cutValue()}
+function companyValue(){return S.lifetime + Object.values(S.upgrades).reduce((a,b)=>a+b*100,0)}
+function currentStage(){let idx=0;for(let i=0;i<stages.length;i++) if(S.lifetime>=stages[i].value) idx=i;return idx}
+function regrowMs(){const weather=(S.weather&&S.weather.regrowMult)||1;return Math.max(700,9000*Math.pow(.86,S.upgrades.regrow||0)*weather)}
+
+function createLawn(force=false){
+  const st=stages[S.stage];
+  if(!force && lawn.length===st.cols*st.rows) return;
+  lawn=Array.from({length:st.cols*st.rows},(_,i)=>({cut:false,cutAt:0,golden:Math.random()<(.02*((S.weather&&S.weather.goldenMult)||1)),phase:Math.random()*10}));
+  mowers=[];
+}
+function updateStage(){
+  const ns=currentStage();
+  if(ns!==S.stage){S.stage=ns;createLawn(true);toast('New area unlocked: '+stages[ns].name+'!');log('Unlocked '+stages[ns].name+'. The grass is somehow more expensive.');save();}
+}
+function cutTile(i, manual=true){
+  const cell=lawn[i]; if(!cell||cell.cut) return false;
+  cell.cut=true;cell.cutAt=Date.now();
+  let value=cutValue();
+  if(cell.golden){value*=50;cell.golden=false;toast('GOLDEN GRASS! +'+money(value));}
+  if(manual){
+    if(Date.now()<S.comboUntil) S.combo=Math.min(25,S.combo+1); else S.combo=1;
+    S.comboUntil=Date.now()+1150; S.bestCombo=Math.max(S.bestCombo,S.combo); value*=1+(S.combo-1)*.08;
+    if(Math.random()<.008 + (S.upgrades.luck||0)*.002){
+      const item=weirdItems[Math.floor(Math.random()*weirdItems.length)]; S.items++; S.found[item]=(S.found[item]||0)+1; value*=5; toast('Found: '+item); log('Found '+item+' hiding in the lawn.');
+    }
+  }
+  S.cash+=value; S.lifetime+=value; S.tiles++;
+  spawnParticle(i,'+'+money(value));
+  updateStage(); checkMissions(); return true;
+}
+function autoCut(count){
+  let attempts=Math.ceil(count*1.5)+4, done=0;
+  while(done<count && attempts-->0){const i=Math.floor(Math.random()*lawn.length); if(cutTile(i,false)) done++;}
+}
+function regrow(){
+  const now=Date.now(), speed=Date.now()<(S.ability.rainUntil||0)?0.18:1;
+  lawn.forEach(c=>{if(c.cut && now-c.cutAt>regrowMs()*speed){c.cut=false;const chance=(.015+(S.upgrades.luck||0)*.003)*((S.weather&&S.weather.goldenMult)||1);c.golden=Math.random()<Math.min(.35,chance)}});
+}
+function spawnParticle(i,text){particles.push({i,text,t:performance.now(),life:900})}
+function drawStageBackground(st,w,h){
+  const themes=[
+    ['#315f36','#1d4427'],['#356b3d','#234c2d'],['#3f7b46','#285a31'],
+    ['#347342','#1f4a2b'],['#2f6840','#1e4430'],['#18211f','#0c1112']
+  ];
+  const pair=themes[S.stage]||themes[0], bg=ctx.createLinearGradient(0,0,0,h);
+  bg.addColorStop(0,pair[0]);bg.addColorStop(1,pair[1]);ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+  ctx.save();ctx.globalAlpha=.28;
+  if(S.stage===0){
+    ctx.fillStyle='#6e4d31';ctx.fillRect(0,0,w,20);ctx.fillRect(0,h-18,w,18);
+    for(let x=20;x<w;x+=78){ctx.fillStyle='#d6b987';ctx.fillRect(x,3,8,34)}
+    ctx.fillStyle='#d4654f';ctx.beginPath();ctx.arc(85,70,18,0,Math.PI*2);ctx.fill();
+  }else if(S.stage===1){
+    ctx.fillStyle='#b9c7b8';ctx.fillRect(0,h-58,w,58);ctx.fillStyle='#8aa0a0';
+    for(let x=40;x<w;x+=180){ctx.fillRect(x,22,92,54);ctx.fillStyle='#586d75';ctx.fillRect(x+24,42,18,18);ctx.fillStyle='#8aa0a0'}
+  }else if(S.stage===2){
+    ctx.fillStyle='#d7c38b';ctx.beginPath();ctx.ellipse(w*.70,h*.35,95,54,-.18,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#e8f2e7';ctx.fillRect(w*.21,h*.23,5,105);ctx.fillStyle='#ff5f62';ctx.beginPath();ctx.moveTo(w*.21+5,h*.23);ctx.lineTo(w*.21+52,h*.23+18);ctx.lineTo(w*.21+5,h*.23+34);ctx.fill();
+  }else if(S.stage===3){
+    ctx.strokeStyle='rgba(255,255,255,.75)';ctx.lineWidth=5;ctx.strokeRect(65,55,w-130,h-110);
+    for(let x=150;x<w-100;x+=130){ctx.beginPath();ctx.moveTo(x,55);ctx.lineTo(x,h-55);ctx.stroke()}
+  }else if(S.stage===4){
+    ctx.fillStyle='#70543b';ctx.fillRect(w*.08,0,26,h);ctx.fillRect(w*.78,0,22,h);
+    ctx.fillStyle='#5f8755';for(let y=35;y<h;y+=110){ctx.beginPath();ctx.arc(w*.14,y,42,0,Math.PI*2);ctx.arc(w*.84,y+25,48,0,Math.PI*2);ctx.fill()}
+  }else if(S.stage===5){
+    ctx.fillStyle='#111820';ctx.fillRect(0,0,w,h);ctx.fillStyle='#d9e6ee';
+    for(let i=0;i<75;i++){const x=(i*137)%w,y=(i*83)%h;ctx.globalAlpha=.22+(i%4)*.12;ctx.fillRect(x,y,2+(i%2),2+(i%2))}
+    ctx.globalAlpha=.22;ctx.fillStyle='#d8d4c8';ctx.beginPath();ctx.arc(w*.78,h*.28,78,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+function draw(){
+  const st=stages[S.stage], w=canvas.width, h=canvas.height, cw=w/st.cols, ch=h/st.rows;
+  ctx.clearRect(0,0,w,h);
+  drawStageBackground(st,w,h);
+  lawn.forEach((c,i)=>{
+    const x=(i%st.cols)*cw,y=Math.floor(i/st.cols)*ch;
+    if(c.cut){ctx.fillStyle='#7fb06a';ctx.fillRect(x+1,y+1,cw-2,ch-2);ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(x+cw*.12,y+ch*.14,cw*.76,ch*.12)}
+    else {ctx.fillStyle=c.golden?'#d7be43':'#2f7b3a';ctx.fillRect(x+1,y+1,cw-2,ch-2);ctx.strokeStyle='rgba(255,255,255,.05)';ctx.beginPath();ctx.moveTo(x+cw*.2,y+ch*.78);ctx.lineTo(x+cw*.28,y+ch*.28);ctx.moveTo(x+cw*.45,y+ch*.82);ctx.lineTo(x+cw*.52,y+ch*.22);ctx.moveTo(x+cw*.7,y+ch*.78);ctx.lineTo(x+cw*.62,y+ch*.3);ctx.stroke();}
+    ctx.strokeStyle='rgba(0,0,0,.08)';ctx.strokeRect(x+.5,y+.5,cw-1,ch-1);
+  });
+  const t=performance.now();
+  particles=particles.filter(p=>t-p.t<p.life);
+  particles.forEach(p=>{const i=p.i,x=(i%st.cols)*cw+cw/2,y=Math.floor(i/st.cols)*ch+ch/2-(t-p.t)/8;ctx.globalAlpha=1-(t-p.t)/p.life;ctx.fillStyle='white';ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.fillText(p.text,x,y);ctx.globalAlpha=1});
+  requestAnimationFrame(draw);
+}
+function pointerToIndex(e){
+  const r=canvas.getBoundingClientRect(); const x=(e.clientX-r.left)*(canvas.width/r.width), y=(e.clientY-r.top)*(canvas.height/r.height); const st=stages[S.stage]; const c=Math.floor(x/(canvas.width/st.cols)), rr=Math.floor(y/(canvas.height/st.rows)); return rr*st.cols+c;
+}
+canvas.addEventListener('pointerdown',e=>{pointerDown=true;canvas.setPointerCapture?.(e.pointerId);const i=pointerToIndex(e);lastPointerCell=String(i);cutTile(i,true)});
+canvas.addEventListener('pointermove',e=>{if(!pointerDown)return;const i=pointerToIndex(e);if(String(i)!==lastPointerCell){lastPointerCell=String(i);cutTile(i,true)}});
+canvas.addEventListener('pointerup',()=>{pointerDown=false;lastPointerCell='' }); canvas.addEventListener('pointercancel',()=>{pointerDown=false});
+
+function renderUpgrades(){
+  const box=$('#upgrades');
+  box.innerHTML='<h2>Equipment & upgrades</h2><div class="buy-modes"><span class="balance-note">Buy amount</span><div><button class="mode '+(buyMode===1?'active':'')+'" data-mode="1">x1</button> <button class="mode '+(buyMode===10?'active':'')+'" data-mode="10">x10</button> <button class="mode '+(buyMode==='max'?'active':'')+'" data-mode="max">MAX</button></div></div>';
+  box.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{buyMode=b.dataset.mode==='max'?'max':Number(b.dataset.mode);renderUpgrades()});
+  upgradeDefs.forEach(def=>{
+    if(S.stage<def.unlock) return;
+    const lvl=S.upgrades[def.id]||0;
+    const count=buyMode==='max'?maxAffordable(def):buyMode;
+    const shownCount=Math.max(1,count);
+    const c=batchCost(def,shownCount);
+    const affordable=count>0&&S.cash>=c;
+    const el=document.createElement('div');el.className='upgrade';
+    el.innerHTML=`<div><b>${def.name} <span style="display:inline;color:var(--accent)">Lv.${lvl}</span></b><span>${def.desc}</span></div><button class="buy" ${!affordable?'disabled':''}>${buyMode==='max'&&count>0?'MAX ×'+count+' · ':shownCount>1?'×'+shownCount+' · ':''}${money(c)}</button>`;
+    el.querySelector('button').onclick=()=>{
+      if(!affordable)return;
+      S.cash-=c;S.upgrades[def.id]=lvl+count;
+      log('Bought '+def.name+' ×'+count+' → Lv.'+(lvl+count)+'.');
+      renderAll();save();
+    };
+    box.appendChild(el);
+  });
+}
+function checkMissions(){
+  missions.forEach(m=>{if(S.missions[m.id])return; let v=m.stat==='stage'?S.stage:S[m.stat]||0; if(v>=m.target){S.missions[m.id]=true;S.cash+=m.reward;toast('Mission complete! +'+money(m.reward));log('Mission complete: '+m.text+'.')}})
+}
+function renderMissions(){
+  const box=$('#missions');box.innerHTML='<h2>Missions</h2>';
+  missions.forEach(m=>{const done=!!S.missions[m.id];let v=m.stat==='stage'?S.stage:S[m.stat]||0;const pct=Math.min(100,v/m.target*100);const el=document.createElement('div');el.className='mission '+(done?'done':'');el.innerHTML=`<b>${m.text}</b><div class="sub">Reward ${money(m.reward)} ${done?'— completed':''}</div><div class="progress"><i style="width:${pct}%"></i></div>`;box.appendChild(el)});
+}
+function renderStats(){
+  const box=$('#stats'); const fields=[['Total cash earned',money(S.lifetime)],['Tiles mowed',fmt(S.tiles)],['Equivalent soccer fields',(S.tiles/7140).toFixed(2)],['Approx. grass blades destroyed',fmt(S.tiles*580)],['Weird items found',fmt(S.items)],['Boss weeds defeated',fmt(S.bossKills||0)],['Best combo','x'+S.bestCombo],['Current auto cuts/sec',fmt(autoTilesPerSec())],['Offline income rate','50%']];
+  box.innerHTML='<h2>Pointless statistics</h2>'+fields.map(([a,b])=>`<div class="upgrade"><div><b>${a}</b></div><strong>${b}</strong></div>`).join('');
+  const found=Object.entries(S.found); if(found.length) box.innerHTML+='<h2 style="margin-top:16px">Stuff found in the grass</h2>'+found.map(([k,v])=>`<div class="sub">${k} × ${v}</div>`).join('');
+}
+function renderAbilities(){
+  const defs=[
+    {id:'turboBtn',unlock:1,cdKey:'turboCd',untilKey:'turboUntil',dur:60000,cd:120000,name:'Turbo Mow',desc:'3× income for 60 sec'},
+    {id:'rainBtn',unlock:2,cdKey:'rainCd',untilKey:'rainUntil',dur:30000,cd:150000,name:'Rainstorm',desc:'very fast regrowth for 30 sec'},
+    {id:'perfectBtn',unlock:3,cdKey:'perfectCd',untilKey:null,dur:0,cd:180000,name:'Perfect Cut',desc:'cut every standing tile once'}
+  ];
+  defs.forEach(def=>{
+    const b=$('#'+def.id), label=b.querySelector('small');
+    if(S.stage<def.unlock){b.disabled=true;return;}
+    const now=Date.now(), cdUntil=S.ability[def.cdKey]||0, ready=cdUntil<=now;
+    b.disabled=!ready;
+    label.textContent=ready?def.desc:'Cooldown '+Math.ceil((cdUntil-now)/1000)+'s';
+    b.onclick=()=>{
+      if(!ready)return;
+      if(def.untilKey) S.ability[def.untilKey]=Date.now()+def.dur;
+      else lawn.forEach((c,i)=>{if(!c.cut)cutTile(i,false)});
+      S.ability[def.cdKey]=Date.now()+def.cd;
+      toast(def.name+' activated!');log(def.name+' activated.');renderAll();save();
+    };
+  });
+}
+function renderPrestige(){
+  const cv=companyValue(), threshold=60000000, pct=Math.min(100,cv/threshold*100), btn=$('#prestigeBtn');$('#prestigeProgress').style.width=pct+'%';
+  const currentBonus=Math.round((repMult()-1)*100);
+  if(cv>=threshold){
+    const gain=Math.max(1,Math.floor(Math.pow(cv/threshold,.35)*3));
+    const nextMult=1+Math.log10(1+S.rep+gain)*.35;
+    const nextBonus=Math.round((nextMult-1)*100);
+    $('#prestigeText').textContent='Sell now for '+gain+' Reputation. Permanent income bonus: +'+currentBonus+'% → +'+nextBonus+'%.';
+    btn.disabled=false;btn.textContent='Sell for '+gain+' Reputation';btn.onclick=()=>prestige(gain);
+  }else{
+    $('#prestigeText').textContent='Reach '+money(threshold)+' company value to prestige. '+Math.floor(pct)+'% there. Current permanent bonus: +'+currentBonus+'%.';
+    btn.disabled=true;btn.textContent='Sell Company';
+  }
+}
+function prestige(gain){if(!confirm('Sell the company and restart for '+gain+' Reputation?'))return;const rep=S.rep+gain,found=S.found,items=S.items,bossKills=S.bossKills||0;S=baseState();S.rep=rep;S.found=found;S.items=items;S.bossKills=bossKills;createLawn(true);log('Started over with '+fmt(rep)+' Reputation. Collection progress kept.');renderAll();save();}
+function renderAll(){
+  $('#cash').textContent=money(S.cash);$('#dps').textContent=money(dps());$('#rep').textContent=fmt(S.rep);$('#companyValue').textContent=money(companyValue());$('#stageName').textContent=stages[S.stage].name;$('#stageDesc').textContent=stages[S.stage].desc;$('#combo').textContent=(Date.now()<S.comboUntil&&S.combo>1)?'COMBO x'+S.combo:'';
+  renderUpgrades();renderMissions();renderStats();renderAbilities();renderPrestige();
+}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
+function log(msg){const el=$('#log'),d=document.createElement('div');d.textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+' — '+msg;el.prepend(d);while(el.children.length>18)el.removeChild(el.lastChild)}
+function save(){S.lastSave=Date.now();S.econVersion=ECON_VERSION;localStorage.setItem(SAVE_KEY,JSON.stringify(S))}
+function migrateEconomy(raw){
+  const old=Object.assign(baseState(),raw||{});
+  if((old.econVersion||0)>=ECON_VERSION)return old;
+  const stage=Math.max(0,Math.min(stages.length-1,Number(old.stage)||0));
+  const migrated=Object.assign(baseState(),old);
+  migrated.econVersion=ECON_VERSION;
+  migrated.stage=stage;
+  const floorValue=stages[stage].value;
+  migrated.lifetime=stage===0?Math.min(Number(old.lifetime)||0,2500):Math.max(floorValue,Math.round(floorValue*1.15));
+  migrated.cash=Math.max(0,Math.round(migrated.lifetime*.12));
+  migrated.rep=Math.min(60,Math.max(0,Math.round(Math.log10(1+Math.max(0,Number(old.rep)||0))*4)));
+  const nextUp={};
+  Object.entries(old.upgrades||{}).forEach(([k,v])=>{
+    const n=Math.max(0,Number(v)||0);
+    const cap=(k==='grassValue'||k==='regrow')?18:12;
+    nextUp[k]=Math.min(cap,Math.round(Math.log2(1+n)*2));
+  });
+  migrated.upgrades=nextUp;
+  migrated.weather=null;migrated.boss=null;
+  migrated.nextWeatherAt=Date.now()+30000;
+  migrated.nextBossTiles=(Number(migrated.tiles)||0)+500;
+  migrated._economyMigrated=true;
+  return migrated;
+}
+function load(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(SAVE_KEY));
+    return raw?migrateEconomy(raw):baseState();
+  }catch{return baseState()}
+}
+function setupOffline(){
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw) return;
+  try{
+    const parsed=JSON.parse(raw);
+    const elapsed=Math.min(8*3600,Math.max(0,(Date.now()-(parsed.lastSave||Date.now()))/1000));
+    if(elapsed<=60) return;
+    const auto=(parsed.upgrades?.push||0)*1
+      +(parsed.upgrades?.electric||0)*4
+      +(parsed.upgrades?.rider||0)*14
+      +(parsed.upgrades?.robot||0)*45
+      +(parsed.upgrades?.drone||0)*150
+      +(parsed.upgrades?.fleet||0)*500;
+    const income=auto
+      * stages[parsed.stage||0].grass
+      * Math.pow(1.20,parsed.upgrades?.grassValue||0)
+      * (1+Math.log10(1+Math.max(0,parsed.rep||0))*.35)
+      * elapsed
+      * .5;
+    if(income>0){
+      offlinePending=income;
+      $('#offlineText').textContent='Your mowers worked for '+Math.floor(elapsed/60)+' minutes and earned '+money(income)+'.';
+      $('#offlineOverlay').classList.add('show');
+    }
+  }catch(err){
+    console.warn('Offline earnings calculation failed',err);
+  }
+}
+$('#offlineClaim').onclick=()=>{S.cash+=offlinePending;S.lifetime+=offlinePending;offlinePending=0;$('#offlineOverlay').classList.remove('show');toast('Offline earnings collected!');renderAll();save()};
+$('#resetBtn').onclick=()=>{if(confirm('Delete your entire Nobody Mows save?')){localStorage.removeItem(SAVE_KEY);S=baseState();createLawn(true);renderAll();location.reload()}};
+
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.tabpanel').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.tab).classList.add('active')});
+
+createLawn(true); setupOffline();
+let last=performance.now(), autoCarry=0;
+setInterval(()=>{regrow();const now=performance.now(),dt=(now-last)/1000;last=now;autoCarry+=autoTilesPerSec()*dt;const n=Math.floor(autoCarry);if(n>0){autoCarry-=n;autoCut(Math.min(n,500));} if(Date.now()-S.lastEvent>45000 && Math.random()<.04){S.lastEvent=Date.now();const event=Math.random(); if(event<.5){S.ability.rainUntil=Date.now()+15000;toast('Random rain! Grass grows faster.');log('A random rain shower showed up.');}else{S.cash+=cutValue()*500;S.lifetime+=cutValue()*500;toast('Neighbor paid for an emergency mow!');log('Emergency mowing job paid '+money(cutValue()*500)+'.')}} checkMissions();renderAll();},1000);
+setInterval(save,10000);window.addEventListener('beforeunload',save);requestAnimationFrame(draw);renderAll();if(S._economyMigrated){toast('Economy rebalanced — giant numbers compressed.');log('Economy v4 normalized the old test save while keeping stage, collection and core progress.');delete S._economyMigrated;save();}
+
+window.NobodyMowsAPI = {
+  get state(){return S},
+  canvas:canvas,
+  stages:stages,
+  itemDefs:itemDefs,
+  money:money,
+  fmt:fmt,
+  cutValue:cutValue,
+  autoTilesPerSec:autoTilesPerSec,
+  renderAll:renderAll,
+  toast:toast,
+  log:log,
+  save:save
+};
+})();
+</script>
+<script src="visuals.js?v=2"></script>\n<script src="v3.js?v=3"></script>
+</body>
+</html>
++fmt(n)}
+function costAt(def,lvl){return def.base*Math.pow(def.scale,lvl)}
+function cost(def){const lvl=S.upgrades[def.id]||0;return Math.floor(costAt(def,lvl))}
+function batchCost(def,count){
+  const lvl=S.upgrades[def.id]||0;
+  if(count<=0)return 0;
+  const first=costAt(def,lvl);
+  return Math.floor(first*(Math.pow(def.scale,count)-1)/(def.scale-1));
+}
+function maxAffordable(def){
+  let total=0,count=0,lvl=S.upgrades[def.id]||0;
+  while(count<100){
+    const next=costAt(def,lvl+count);
+    if(total+next>S.cash)break;
+    total+=next;count++;
+  }
+  return count;
+}
+function repMult(){return 1 + Math.log10(1+Math.max(0,S.rep||0))*0.35}
+function cutValue(){const level=S.upgrades.grassValue||0, weather=(S.weather&&S.weather.valueMult)||1; return stages[S.stage].grass * Math.pow(1.20,level) * repMult() * (Date.now()<(S.ability.turboUntil||0)?3:1) * weather}
 function autoTilesPerSec(){
-  const u=S.upgrades, weather=(S.weather&&S.weather.autoMult)||1; return ((u.push||0)*1 + (u.electric||0)*5 + (u.rider||0)*18 + (u.robot||0)*65 + (u.drone||0)*220 + (u.fleet||0)*900) * weather;
+  const u=S.upgrades, weather=(S.weather&&S.weather.autoMult)||1; return ((u.push||0)*1 + (u.electric||0)*4 + (u.rider||0)*14 + (u.robot||0)*45 + (u.drone||0)*150 + (u.fleet||0)*500) * weather;
 }
 function dps(){return autoTilesPerSec()*cutValue()}
 function companyValue(){return S.lifetime + Object.values(S.upgrades).reduce((a,b)=>a+b*100,0)}
