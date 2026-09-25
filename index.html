@@ -214,11 +214,30 @@ function maxAffordable(def){
   return count;
 }
 function repMult(){return 1 + Math.log10(1+Math.max(0,S.rep||0))*0.50}
-function cutValue(){const level=S.upgrades.grassValue||0, weather=(S.weather&&S.weather.valueMult)||1; return stages[S.stage].grass * Math.pow(1.20,level) * repMult() * (Date.now()<(S.ability.turboUntil||0)?4:1) * weather}
+function collectionBonuses(){
+  const found=S.found||{},has=name=>(found[name]||0)>0;
+  const defs=[
+    {id:'yard',name:'Yard Relics',items:['Lost coin','Golf ball','Dog toy','Old key','Bottle cap'],effect:'All income +15%',all:1.15},
+    {id:'tech',name:'Strange Tech',items:['Broken smartwatch','Ancient USB stick','Meteor fragment','Dyson panel shard'],effect:'Auto output +25%',auto:1.25},
+    {id:'space',name:'Space Junk',items:['Alien parking ticket','Moon cheese coupon','Red dust sample','Zero-G golf ball'],effect:'All income +25%',all:1.25},
+    {id:'wtf',name:'WTF Archive',items:['Alien parking ticket','Tiny lawn deed','Moon cheese coupon','Last grass seed'],effect:'Boss rewards +25%',boss:1.25}
+  ];
+  let all=1,auto=1,boss=1;
+  const sets=defs.map(d=>{
+    const owned=d.items.filter(has).length,complete=owned===d.items.length;
+    if(complete){all*=d.all||1;auto*=d.auto||1;boss*=d.boss||1;}
+    return Object.assign({},d,{owned,complete});
+  });
+  const unlocked=itemDefs.filter(x=>has(x.name)).length;
+  const mastery=unlocked>=12;
+  if(mastery)all*=1.15;
+  return {all,auto,boss,unlocked,mastery,sets};
+}
+function cutValue(){const level=S.upgrades.grassValue||0, weather=(S.weather&&S.weather.valueMult)||1; return stages[S.stage].grass * Math.pow(1.20,level) * repMult() * collectionBonuses().all * (Date.now()<(S.ability.turboUntil||0)?4:1) * weather}
 function autoTilesPerSec(){
   const u=S.upgrades, weather=(S.weather&&S.weather.autoMult)||1;
   return ((u.push||0)*1 + (u.electric||0)*4 + (u.rider||0)*14 + (u.robot||0)*45 + (u.drone||0)*150 + (u.fleet||0)*500
-    + (u.terra||0)*2000 + (u.orbital||0)*8000 + (u.quantum||0)*32000 + (u.stellar||0)*120000 + (u.reality||0)*500000) * weather;
+    + (u.terra||0)*2000 + (u.orbital||0)*8000 + (u.quantum||0)*32000 + (u.stellar||0)*120000 + (u.reality||0)*500000) * weather * collectionBonuses().auto;
 }
 function regrowEfficiency(){return 1+Math.min(1.5,(S.upgrades.regrow||0)*.025)}
 function dps(){
@@ -778,6 +797,7 @@ window.NobodyMowsAPI = {
   cutValue:cutValue,
   autoTilesPerSec:autoTilesPerSec,
   dps:dps,
+  collectionBonuses:collectionBonuses,
   renderAll:renderAll,
   toast:toast,
   log:log,
@@ -785,8 +805,9 @@ window.NobodyMowsAPI = {
 };
 })();
 </script>
-<script src="visuals.js?v=12"></script>
-<script src="v3.js?v=11"></script>
+<script src="visuals.js?v=13"></script>
+<script src="v3.js?v=12"></script>
 <script src="juice.js?v=1"></script>
+<script src="fun.js?v=1"></script>
 </body>
 </html>
