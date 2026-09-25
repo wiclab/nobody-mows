@@ -233,8 +233,19 @@ function cutTile(i, manual=true){
   updateStage(); checkMissions(); return true;
 }
 function autoCut(count){
-  let attempts=Math.ceil(count*1.5)+4, done=0;
-  while(done<count && attempts-->0){const i=Math.floor(Math.random()*lawn.length); if(cutTile(i,false)) done++;}
+  // Visual-only mowing. Passive cash is paid separately from dps(),
+  // so the displayed "Per sec" value always matches actual income.
+  let attempts=Math.min(lawn.length*3,Math.ceil(count*1.5)+4), done=0;
+  const now=Date.now();
+  while(done<count && attempts-->0){
+    const i=Math.floor(Math.random()*lawn.length), cell=lawn[i];
+    if(cell && !cell.cut){
+      cell.cut=true;
+      cell.cutAt=now;
+      cell.golden=false;
+      done++;
+    }
+  }
 }
 function regrow(){
   const now=Date.now(), speed=Date.now()<(S.ability.rainUntil||0)?0.18:1;
@@ -597,7 +608,47 @@ document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelect
 
 createLawn(true); setupOffline();
 let last=performance.now(), autoCarry=0;
-setInterval(()=>{regrow();const now=performance.now(),dt=(now-last)/1000;last=now;autoCarry+=autoTilesPerSec()*dt;const n=Math.floor(autoCarry);if(n>0){autoCarry-=n;autoCut(Math.min(n,500));} if(Date.now()-S.lastEvent>45000 && Math.random()<.04){S.lastEvent=Date.now();const event=Math.random(); if(event<.5){S.ability.rainUntil=Date.now()+15000;toast('Random rain! Grass grows faster.');log('A random rain shower showed up.');}else{S.cash+=cutValue()*500;S.lifetime+=cutValue()*500;toast('Neighbor paid for an emergency mow!');log('Emergency mowing job paid '+money(cutValue()*500)+'.')}} checkMissions();renderAll();},1000);
+setInterval(()=>{
+  regrow();
+  const now=performance.now(),dt=Math.max(0,Math.min(2,(now-last)/1000));last=now;
+
+  // Economy and visuals are intentionally separated.
+  // dps() is the exact passive income rate shown in the HUD.
+  const rate=autoTilesPerSec();
+  if(rate>0){
+    const passive=dps()*dt;
+    S.cash+=passive;
+    S.lifetime+=passive;
+
+    autoCarry+=rate*dt;
+    const n=Math.floor(autoCarry);
+    if(n>0){
+      autoCarry-=n;
+      // Keep field animation lightweight even when production is enormous.
+      autoCut(Math.min(n,Math.max(12,lawn.length)));
+
+      // Track production without letting huge late-game values freeze the browser.
+      S.tiles+=Math.min(n,1000000);
+    }
+    updateStage();
+  }
+
+  if(Date.now()-S.lastEvent>45000 && Math.random()<.04){
+    S.lastEvent=Date.now();
+    const event=Math.random();
+    if(event<.5){
+      S.ability.rainUntil=Date.now()+15000;
+      toast('Random rain! Grass grows faster.');
+      log('A random rain shower showed up.');
+    }else{
+      const bonus=cutValue()*500;
+      S.cash+=bonus;S.lifetime+=bonus;
+      toast('Neighbor paid for an emergency mow!');
+      log('Emergency mowing job paid '+money(bonus)+'.');
+    }
+  }
+  checkMissions();renderAll();
+},1000);
 setInterval(save,10000);window.addEventListener('beforeunload',save);requestAnimationFrame(draw);renderAll();if(S._economyMigrated){toast('Economy rebalanced — giant numbers compressed.');log('Economy v4 normalized the old test save while keeping stage, collection and core progress.');delete S._economyMigrated;save();}
 
 window.NobodyMowsAPI = {
@@ -616,7 +667,7 @@ window.NobodyMowsAPI = {
 };
 })();
 </script>
-<script src="visuals.js?v=5"></script>
-<script src="v3.js?v=3"></script>
+<script src="visuals.js?v=6"></script>
+<script src="v3.js?v=6"></script>
 </body>
 </html>
