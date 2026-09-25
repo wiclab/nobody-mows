@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nobody Mows — Idle Lawn Game</title>
+<meta name="description" content="A tiny idle lawn-mowing game for Nobody Asked Data." />
+<style>
+:root{
+  --bg:#0f1712;
+  --panel:#17231b;
+  --panel2:#1f3025;
+  --ink:#f5f7f5;
+  --muted:#a9b9ad;
+  --accent:#9be15d;
+  --accent2:#56ab2f;
+  --warn:#ffd166;
+  --danger:#ff6b6b;
+  --line:rgba(255,255,255,.09);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(circle at top,#193321 0,#0f1712 45%,#0b110d 100%);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100%}
+button{font:inherit}
+.wrap{width:min(1180px,100%);margin:0 auto;padding:18px}
+.topbar{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;margin-bottom:16px}
+.brand h1{font-size:clamp(24px,4vw,42px);margin:0 0 4px;letter-spacing:-.04em}.brand p{margin:0;color:var(--muted);font-size:14px}
+.statstrip{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.pill{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;white-space:nowrap}.pill strong{color:var(--accent)}
+.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,.7fr);gap:16px}
+.card{background:linear-gradient(180deg,rgba(31,48,37,.98),rgba(19,30,23,.98));border:1px solid var(--line);border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.22)}
+.gamecard{padding:14px;overflow:hidden}.hud{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}.stage{font-weight:800}.sub{color:var(--muted);font-size:13px}
+.canvaswrap{position:relative;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:#204325;touch-action:none;min-height:360px}
+canvas{display:block;width:100%;height:auto;aspect-ratio:16/10;cursor:crosshair;touch-action:none;background:#28572f}
+.toast{position:absolute;left:50%;top:18px;transform:translateX(-50%) translateY(-8px);background:rgba(8,12,9,.88);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.13);padding:10px 14px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.combo{position:absolute;right:14px;bottom:12px;font-weight:900;font-size:clamp(18px,4vw,34px);text-shadow:0 4px 18px rgba(0,0,0,.35);opacity:.9}
+.actions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.action{border:0;border-radius:14px;padding:11px 8px;background:#263b2d;color:white;font-weight:800;cursor:pointer;border:1px solid var(--line)}.action:disabled{opacity:.4;cursor:not-allowed}.action small{display:block;color:var(--muted);font-weight:600;margin-top:2px}
+.sidebar{display:grid;gap:12px}.section{padding:14px}.section h2{margin:0 0 10px;font-size:17px}.upgrade{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:14px;padding:11px;margin:8px 0}.upgrade b{display:block;font-size:14px}.upgrade span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.buy{border:0;background:linear-gradient(135deg,var(--accent),#6bcf3f);color:#0b160d;padding:9px 11px;border-radius:12px;font-weight:900;cursor:pointer;min-width:86px}.buy:disabled{filter:grayscale(1);opacity:.45;cursor:not-allowed}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px}.tab{border:1px solid var(--line);background:transparent;color:var(--muted);padding:9px;border-radius:12px;font-weight:800;cursor:pointer}.tab.active{background:#294432;color:white}.tabpanel{display:none}.tabpanel.active{display:block}
+.progress{height:9px;background:#0d150f;border-radius:99px;overflow:hidden;border:1px solid var(--line);margin-top:8px}.progress>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .25s}
+.mission{border:1px solid var(--line);border-radius:14px;padding:10px;margin:8px 0}.mission.done{border-color:rgba(155,225,93,.65);background:rgba(155,225,93,.08)}
+.log{max-height:190px;overflow:auto;font-size:12px;color:var(--muted);line-height:1.55}.log div{padding:5px 0;border-bottom:1px dashed rgba(255,255,255,.05)}
+.prestige{background:linear-gradient(135deg,#352b18,#1f2d1e);border:1px solid rgba(255,209,102,.32)}.prestige .buy{background:linear-gradient(135deg,#ffd166,#ffb703);color:#2a1d00;width:100%;margin-top:8px}.danger{background:#3a2020;color:#ffdede}
+.footer{color:var(--muted);text-align:center;font-size:12px;padding:18px}
+.overlay{position:fixed;inset:0;background:rgba(3,6,4,.78);display:none;align-items:center;justify-content:center;padding:18px;z-index:20}.overlay.show{display:flex}.modal{width:min(520px,100%);background:#17231b;border:1px solid var(--line);border-radius:22px;padding:22px;box-shadow:0 30px 100px rgba(0,0,0,.45)}.modal h3{margin-top:0}.modal button{width:100%;margin-top:8px}
+@media(max-width:880px){.topbar{grid-template-columns:1fr}.statstrip{justify-content:flex-start}.layout{grid-template-columns:1fr}.sidebar{grid-template-columns:1fr}.canvaswrap{min-height:0}.actions{grid-template-columns:1fr}.wrap{padding:10px}.card{border-radius:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand"><h1>Nobody Mows</h1><p>An unnecessarily serious idle game about cutting grass.</p></div>
+    <div class="statstrip">
+      <div class="pill">Cash <strong id="cash">$0</strong></div>
+      <div class="pill">Per sec <strong id="dps">$0</strong></div>
+      <div class="pill">Reputation <strong id="rep">0</strong></div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <section class="card gamecard">
+      <div class="hud">
+        <div><div class="stage" id="stageName">Backyard</div><div class="sub" id="stageDesc">A suspiciously overgrown patch of grass.</div></div>
+        <div class="sub">Company value: <b id="companyValue">$0</b></div>
+      </div>
+      <div class="canvaswrap" id="canvasWrap">
+        <canvas id="game" width="960" height="600" aria-label="Interactive lawn"></canvas>
+        <div class="toast" id="toast"></div>
+        <div class="combo" id="combo"></div>
+      </div>
+      <div class="actions">
+        <button class="action" id="turboBtn">Turbo Mow<small id="turboLabel">Unlocks at Suburban Lawn</small></button>
+        <button class="action" id="rainBtn">Rainstorm<small id="rainLabel">Unlocks at Golf Course</small></button>
+        <button class="action" id="perfectBtn">Perfect Cut<small id="perfectLabel">Unlocks at Stadium</small></button>
+      </div>
+    </section>
+
+    <aside class="sidebar">
+      <section class="card">
+        <div class="tabs">
+          <button class="tab active" data-tab="upgrades">Upgrades</button>
+          <button class="tab" data-tab="missions">Missions</button>
+          <button class="tab" data-tab="stats">Stats</button>
+        </div>
+        <div class="section tabpanel active" id="upgrades"></div>
+        <div class="section tabpanel" id="missions"></div>
+        <div class="section tabpanel" id="stats"></div>
+      </section>
+      <section class="card section prestige" id="prestigeBox">
+        <h2>Sell the Lawn Business</h2>
+        <div class="sub">Reset cash and equipment for permanent Reputation. Each Reputation gives +10% all income.</div>
+        <div class="progress"><i id="prestigeProgress"></i></div>
+        <div class="sub" id="prestigeText" style="margin-top:8px">Reach $25M company value to prestige.</div>
+        <button class="buy" id="prestigeBtn" disabled>Sell Company</button>
+      </section>
+      <section class="card section">
+        <h2>Recent nonsense</h2>
+        <div class="log" id="log"></div>
+        <button class="action danger" id="resetBtn" style="width:100%;margin-top:10px">Reset save</button>
+      </section>
+    </aside>
+  </div>
+  <div class="footer">Saved automatically in your browser. No account. No server. Just grass.</div>
+</div>
+
+<div class="overlay" id="offlineOverlay"><div class="modal"><h3>While you were gone…</h3><p id="offlineText"></p><button class="buy" id="offlineClaim">Collect earnings</button></div></div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const canvas = $('#game'), ctx = canvas.getContext('2d');
+const SAVE_KEY = 'nobodyMowsSave_v1';
+const stages = [
+  {name:'Backyard', desc:'A suspiciously overgrown patch of grass.', value:0, cols:6, rows:4, grass:1},
+  {name:'Suburban Lawn', desc:'The neighbors have started judging you.', value:5000, cols:9, rows:6, grass:2},
+  {name:'Golf Course', desc:'Tiny flags. Huge maintenance budget.', value:75000, cols:12, rows:7, grass:4},
+  {name:'Stadium', desc:'Now thousands of people care about stripes.', value:750000, cols:14, rows:8, grass:8},
+  {name:'City Park', desc:'Congratulations. You now mow public infrastructure.', value:5000000, cols:16, rows:9, grass:16},
+  {name:'Moon Lawn', desc:'There is no atmosphere. There is still grass.', value:25000000, cols:18, rows:10, grass:35}
+];
+const upgradeDefs = [
+  {id:'grassValue', name:'Sharper Blades', desc:'+35% value per cut', base:35, scale:1.55, unlock:0},
+  {id:'regrow', name:'Aggressive Fertilizer', desc:'Grass grows back faster', base:60, scale:1.65, unlock:0},
+  {id:'push', name:'Push Mower', desc:'Automatically cuts 1 tile/sec', base:250, scale:1.72, unlock:0},
+  {id:'electric', name:'Electric Mower', desc:'Automatically cuts 5 tiles/sec', base:1800, scale:1.78, unlock:1},
+  {id:'rider', name:'Riding Mower', desc:'Automatically cuts 18 tiles/sec', base:12000, scale:1.82, unlock:1},
+  {id:'robot', name:'Robot Mower', desc:'Automatically cuts 65 tiles/sec', base:90000, scale:1.86, unlock:2},
+  {id:'drone', name:'Drone Mower', desc:'Automatically cuts 220 tiles/sec', base:700000, scale:1.9, unlock:3},
+  {id:'fleet', name:'Mower Fleet', desc:'Automatically cuts 900 tiles/sec', base:5000000, scale:1.94, unlock:4},
+  {id:'luck', name:'Suspicious Luck', desc:'More golden grass & found items', base:5000, scale:1.8, unlock:1}
+];
+const missions = [
+  {id:'m1', text:'Mow 300 tiles', target:300, stat:'tiles', reward:500},
+  {id:'m2', text:'Earn $10,000 total', target:10000, stat:'lifetime', reward:2500},
+  {id:'m3', text:'Reach a x10 combo', target:10, stat:'bestCombo', reward:10000},
+  {id:'m4', text:'Find 5 weird items', target:5, stat:'items', reward:50000},
+  {id:'m5', text:'Mow 25,000 tiles', target:25000, stat:'tiles', reward:250000},
+  {id:'m6', text:'Reach City Park', target:4, stat:'stage', reward:1000000}
+];
+const weirdItems = ['Lost coin','Golf ball','Dog toy','Wedding ring','Tiny wrench','Old key','Meteor fragment','Very angry snail'];
+const baseState = () => ({
+  cash:0,lifetime:0,tiles:0,items:0,bestCombo:1,rep:0,stage:0,upgrades:{},missions:{},found:{},
+  lastSave:Date.now(), combo:1, comboUntil:0, ability:{turboUntil:0,rainUntil:0,turboCd:0,rainCd:0,perfectCd:0}, lastEvent:0
+});
+let S = load();
+let lawn = [], particles = [], mowers = [];
+let pointerDown = false, lastPointerCell = '';
+let offlinePending = 0;
+
+function fmt(n){
+  if(!isFinite(n)) return '∞';
+  const a=Math.abs(n); if(a<1000) return Math.floor(n).toLocaleString();
+  const units=[['K',1e3],['M',1e6],['B',1e9],['T',1e12],['Qa',1e15]];
+  for(let i=units.length-1;i>=0;i--) if(a>=units[i][1]) return (n/units[i][1]).toFixed(a/units[i][1]>=100?0:a/units[i][1]>=10?1:2)+units[i][0];
+  return n.toFixed(0);
+}
+function money(n){return '$'+fmt(n)}
+function cost(def){const lvl=S.upgrades[def.id]||0;return Math.floor(def.base*Math.pow(def.scale,lvl))}
+function repMult(){return 1 + S.rep*0.10}
+function cutValue(){const level=S.upgrades.grassValue||0; return stages[S.stage].grass * Math.pow(1.35,level) * repMult() * (Date.now()<(S.ability.turboUntil||0)?3:1)}
+function autoTilesPerSec(){
+  const u=S.upgrades; return (u.push||0)*1 + (u.electric||0)*5 + (u.rider||0)*18 + (u.robot||0)*65 + (u.drone||0)*220 + (u.fleet||0)*900;
+}
+function dps(){return autoTilesPerSec()*cutValue()}
+function companyValue(){return S.lifetime + Object.values(S.upgrades).reduce((a,b)=>a+b*100,0)}
+function currentStage(){let idx=0;for(let i=0;i<stages.length;i++) if(S.lifetime>=stages[i].value) idx=i;return idx}
+function regrowMs(){return Math.max(1400,9000*Math.pow(.86,S.upgrades.regrow||0))}
+
+function createLawn(force=false){
+  const st=stages[S.stage];
+  if(!force && lawn.length===st.cols*st.rows) return;
+  lawn=Array.from({length:st.cols*st.rows},(_,i)=>({cut:false,cutAt:0,golden:Math.random()<.02,phase:Math.random()*10}));
+  mowers=[];
+}
+function updateStage(){
+  const ns=currentStage();
+  if(ns!==S.stage){S.stage=ns;createLawn(true);toast('New area unlocked: '+stages[ns].name+'!');log('Unlocked '+stages[ns].name+'. The grass is somehow more expensive.');save();}
+}
+function cutTile(i, manual=true){
+  const cell=lawn[i]; if(!cell||cell.cut) return false;
+  cell.cut=true;cell.cutAt=Date.now();
+  let value=cutValue();
+  if(cell.golden){value*=50;cell.golden=false;toast('GOLDEN GRASS! +'+money(value));}
+  if(manual){
+    if(Date.now()<S.comboUntil) S.combo=Math.min(25,S.combo+1); else S.combo=1;
+    S.comboUntil=Date.now()+1150; S.bestCombo=Math.max(S.bestCombo,S.combo); value*=1+(S.combo-1)*.08;
+    if(Math.random()<.008 + (S.upgrades.luck||0)*.002){
+      const item=weirdItems[Math.floor(Math.random()*weirdItems.length)]; S.items++; S.found[item]=(S.found[item]||0)+1; value*=5; toast('Found: '+item); log('Found '+item+' hiding in the lawn.');
+    }
+  }
+  S.cash+=value; S.lifetime+=value; S.tiles++;
+  spawnParticle(i,'+'+money(value));
+  updateStage(); checkMissions(); return true;
+}
+function autoCut(count){
+  let attempts=Math.ceil(count*1.5)+4, done=0;
+  while(done<count && attempts-->0){const i=Math.floor(Math.random()*lawn.length); if(cutTile(i,false)) done++;}
+}
+function regrow(){
+  const now=Date.now(), speed=Date.now()<(S.ability.rainUntil||0)?0.18:1;
+  lawn.forEach(c=>{if(c.cut && now-c.cutAt>regrowMs()*speed){c.cut=false;c.golden=Math.random()<(.015+(S.upgrades.luck||0)*.003)}});
+}
+function spawnParticle(i,text){particles.push({i,text,t:performance.now(),life:900})}
+function draw(){
+  const st=stages[S.stage], w=canvas.width, h=canvas.height, cw=w/st.cols, ch=h/st.rows;
+  ctx.clearRect(0,0,w,h);
+  const bg=ctx.createLinearGradient(0,0,0,h); bg.addColorStop(0,'#2d6537'); bg.addColorStop(1,'#234f2c'); ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+  lawn.forEach((c,i)=>{
+    const x=(i%st.cols)*cw,y=Math.floor(i/st.cols)*ch;
+    if(c.cut){ctx.fillStyle='#7fb06a';ctx.fillRect(x+1,y+1,cw-2,ch-2);ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(x+cw*.12,y+ch*.14,cw*.76,ch*.12)}
+    else {ctx.fillStyle=c.golden?'#d7be43':'#2f7b3a';ctx.fillRect(x+1,y+1,cw-2,ch-2);ctx.strokeStyle='rgba(255,255,255,.05)';ctx.beginPath();ctx.moveTo(x+cw*.2,y+ch*.78);ctx.lineTo(x+cw*.28,y+ch*.28);ctx.moveTo(x+cw*.45,y+ch*.82);ctx.lineTo(x+cw*.52,y+ch*.22);ctx.moveTo(x+cw*.7,y+ch*.78);ctx.lineTo(x+cw*.62,y+ch*.3);ctx.stroke();}
+    ctx.strokeStyle='rgba(0,0,0,.08)';ctx.strokeRect(x+.5,y+.5,cw-1,ch-1);
+  });
+  const t=performance.now();
+  particles=particles.filter(p=>t-p.t<p.life);
+  particles.forEach(p=>{const i=p.i,x=(i%st.cols)*cw+cw/2,y=Math.floor(i/st.cols)*ch+ch/2-(t-p.t)/8;ctx.globalAlpha=1-(t-p.t)/p.life;ctx.fillStyle='white';ctx.font='bold 20px system-ui';ctx.textAlign='center';ctx.fillText(p.text,x,y);ctx.globalAlpha=1});
+  requestAnimationFrame(draw);
+}
+function pointerToIndex(e){
+  const r=canvas.getBoundingClientRect(); const x=(e.clientX-r.left)*(canvas.width/r.width), y=(e.clientY-r.top)*(canvas.height/r.height); const st=stages[S.stage]; const c=Math.floor(x/(canvas.width/st.cols)), rr=Math.floor(y/(canvas.height/st.rows)); return rr*st.cols+c;
+}
+canvas.addEventListener('pointerdown',e=>{pointerDown=true;canvas.setPointerCapture?.(e.pointerId);const i=pointerToIndex(e);lastPointerCell=String(i);cutTile(i,true)});
+canvas.addEventListener('pointermove',e=>{if(!pointerDown)return;const i=pointerToIndex(e);if(String(i)!==lastPointerCell){lastPointerCell=String(i);cutTile(i,true)}});
+canvas.addEventListener('pointerup',()=>{pointerDown=false;lastPointerCell='' }); canvas.addEventListener('pointercancel',()=>{pointerDown=false});
+
+function renderUpgrades(){
+  const box=$('#upgrades'); box.innerHTML='<h2>Equipment & upgrades</h2>';
+  upgradeDefs.forEach(def=>{
+    if(S.stage<def.unlock) return;
+    const lvl=S.upgrades[def.id]||0, c=cost(def);
+    const el=document.createElement('div');el.className='upgrade';
+    el.innerHTML=`<div><b>${def.name} <span style="display:inline;color:var(--accent)">Lv.${lvl}</span></b><span>${def.desc}</span></div><button class="buy" ${S.cash<c?'disabled':''}>${money(c)}</button>`;
+    el.querySelector('button').onclick=()=>{if(S.cash<c)return;S.cash-=c;S.upgrades[def.id]=lvl+1;log('Bought '+def.name+' Lv.'+(lvl+1)+'.');renderAll();save()};box.appendChild(el);
+  });
+}
+function checkMissions(){
+  missions.forEach(m=>{if(S.missions[m.id])return; let v=m.stat==='stage'?S.stage:S[m.stat]||0; if(v>=m.target){S.missions[m.id]=true;S.cash+=m.reward;toast('Mission complete! +'+money(m.reward));log('Mission complete: '+m.text+'.')}})
+}
+function renderMissions(){
+  const box=$('#missions');box.innerHTML='<h2>Missions</h2>';
+  missions.forEach(m=>{const done=!!S.missions[m.id];let v=m.stat==='stage'?S.stage:S[m.stat]||0;const pct=Math.min(100,v/m.target*100);const el=document.createElement('div');el.className='mission '+(done?'done':'');el.innerHTML=`<b>${m.text}</b><div class="sub">Reward ${money(m.reward)} ${done?'— completed':''}</div><div class="progress"><i style="width:${pct}%"></i></div>`;box.appendChild(el)});
+}
+function renderStats(){
+  const box=$('#stats'); const fields=[['Total cash earned',money(S.lifetime)],['Tiles mowed',fmt(S.tiles)],['Equivalent soccer fields',(S.tiles/7140).toFixed(2)],['Approx. grass blades destroyed',fmt(S.tiles*580)],['Weird items found',fmt(S.items)],['Best combo','x'+S.bestCombo],['Current auto cuts/sec',fmt(autoTilesPerSec())],['Offline income rate','50%']];
+  box.innerHTML='<h2>Pointless statistics</h2>'+fields.map(([a,b])=>`<div class="upgrade"><div><b>${a}</b></div><strong>${b}</strong></div>`).join('');
+  const found=Object.entries(S.found); if(found.length) box.innerHTML+='<h2 style="margin-top:16px">Stuff found in the grass</h2>'+found.map(([k,v])=>`<div class="sub">${k} × ${v}</div>`).join('');
+}
+function renderAbilities(){
+  const defs=[
+    {id:'turboBtn',unlock:1,cdKey:'turboCd',untilKey:'turboUntil',dur:60000,cd:120000,name:'Turbo Mow',desc:'3× income for 60 sec'},
+    {id:'rainBtn',unlock:2,cdKey:'rainCd',untilKey:'rainUntil',dur:30000,cd:150000,name:'Rainstorm',desc:'very fast regrowth for 30 sec'},
+    {id:'perfectBtn',unlock:3,cdKey:'perfectCd',untilKey:null,dur:0,cd:180000,name:'Perfect Cut',desc:'cut every standing tile once'}
+  ];
+  defs.forEach(def=>{
+    const b=$('#'+def.id), label=b.querySelector('small');
+    if(S.stage<def.unlock){b.disabled=true;return;}
+    const now=Date.now(), cdUntil=S.ability[def.cdKey]||0, ready=cdUntil<=now;
+    b.disabled=!ready;
+    label.textContent=ready?def.desc:'Cooldown '+Math.ceil((cdUntil-now)/1000)+'s';
+    b.onclick=()=>{
+      if(!ready)return;
+      if(def.untilKey) S.ability[def.untilKey]=Date.now()+def.dur;
+      else lawn.forEach((c,i)=>{if(!c.cut)cutTile(i,false)});
+      S.ability[def.cdKey]=Date.now()+def.cd;
+      toast(def.name+' activated!');log(def.name+' activated.');renderAll();save();
+    };
+  });
+}
+function renderPrestige(){
+  const cv=companyValue(), threshold=25000000, pct=Math.min(100,cv/threshold*100), btn=$('#prestigeBtn');$('#prestigeProgress').style.width=pct+'%';
+  if(cv>=threshold){const gain=Math.max(1,Math.floor(Math.sqrt(cv/threshold)*8));$('#prestigeText').textContent='Sell now for '+gain+' Reputation (+'+(gain*10)+'% permanent income).';btn.disabled=false;btn.textContent='Sell for '+gain+' Reputation';btn.onclick=()=>prestige(gain);}else{$('#prestigeText').textContent='Reach '+money(threshold)+' company value to prestige. '+Math.floor(pct)+'% there.';btn.disabled=true;btn.textContent='Sell Company'}
+}
+function prestige(gain){if(!confirm('Sell the company and restart for '+gain+' Reputation?'))return;const rep=S.rep+gain;S=baseState();S.rep=rep;createLawn(true);log('Started over with '+rep+' Reputation.');renderAll();save();}
+function renderAll(){
+  $('#cash').textContent=money(S.cash);$('#dps').textContent=money(dps());$('#rep').textContent=S.rep;$('#companyValue').textContent=money(companyValue());$('#stageName').textContent=stages[S.stage].name;$('#stageDesc').textContent=stages[S.stage].desc;$('#combo').textContent=(Date.now()<S.comboUntil&&S.combo>1)?'COMBO x'+S.combo:'';
+  renderUpgrades();renderMissions();renderStats();renderAbilities();renderPrestige();
+}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),1800)}
+function log(msg){const el=$('#log'),d=document.createElement('div');d.textContent=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})+' — '+msg;el.prepend(d);while(el.children.length>18)el.removeChild(el.lastChild)}
+function save(){S.lastSave=Date.now();localStorage.setItem(SAVE_KEY,JSON.stringify(S))}
+function load(){try{const raw=JSON.parse(localStorage.getItem(SAVE_KEY));return raw?Object.assign(baseState(),raw):baseState()}catch{return baseState()}}
+function setupOffline(){
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw) return;
+  try{
+    const parsed=JSON.parse(raw);
+    const elapsed=Math.min(8*3600,Math.max(0,(Date.now()-(parsed.lastSave||Date.now()))/1000));
+    if(elapsed<=60) return;
+    const auto=(parsed.upgrades?.push||0)*1
+      +(parsed.upgrades?.electric||0)*5
+      +(parsed.upgrades?.rider||0)*18
+      +(parsed.upgrades?.robot||0)*65
+      +(parsed.upgrades?.drone||0)*220
+      +(parsed.upgrades?.fleet||0)*900;
+    const income=auto
+      * stages[parsed.stage||0].grass
+      * Math.pow(1.35,parsed.upgrades?.grassValue||0)
+      * (1+(parsed.rep||0)*.1)
+      * elapsed
+      * .5;
+    if(income>0){
+      offlinePending=income;
+      $('#offlineText').textContent='Your mowers worked for '+Math.floor(elapsed/60)+' minutes and earned '+money(income)+'.';
+      $('#offlineOverlay').classList.add('show');
+    }
+  }catch(err){
+    console.warn('Offline earnings calculation failed',err);
+  }
+}
+$('#offlineClaim').onclick=()=>{S.cash+=offlinePending;S.lifetime+=offlinePending;offlinePending=0;$('#offlineOverlay').classList.remove('show');toast('Offline earnings collected!');renderAll();save()};
+$('#resetBtn').onclick=()=>{if(confirm('Delete your entire Nobody Mows save?')){localStorage.removeItem(SAVE_KEY);S=baseState();createLawn(true);renderAll();location.reload()}};
+
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab,.tabpanel').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.tab).classList.add('active')});
+
+createLawn(true); setupOffline();
+let last=performance.now(), autoCarry=0;
+setInterval(()=>{regrow();const now=performance.now(),dt=(now-last)/1000;last=now;autoCarry+=autoTilesPerSec()*dt;const n=Math.floor(autoCarry);if(n>0){autoCarry-=n;autoCut(Math.min(n,500));} if(Date.now()-S.lastEvent>45000 && Math.random()<.04){S.lastEvent=Date.now();const event=Math.random(); if(event<.5){S.ability.rainUntil=Date.now()+15000;toast('Random rain! Grass grows faster.');log('A random rain shower showed up.');}else{S.cash+=cutValue()*500;S.lifetime+=cutValue()*500;toast('Neighbor paid for an emergency mow!');log('Emergency mowing job paid '+money(cutValue()*500)+'.')}} checkMissions();renderAll();},1000);
+setInterval(save,10000);window.addEventListener('beforeunload',save);requestAnimationFrame(draw);renderAll();
+})();
+</script>
+</body>
+</html>
