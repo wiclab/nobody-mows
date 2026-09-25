@@ -3,7 +3,8 @@
 
   const game = document.getElementById('game');
   const wrap = document.getElementById('canvasWrap');
-  if (!game || !wrap) return;
+  const api = window.NobodyMowsAPI;
+  if (!game || !wrap || !api) return;
 
   const fx = document.createElement('canvas');
   fx.id = 'mowerFx';
@@ -17,7 +18,7 @@
     height: '100%',
     pointerEvents: 'none',
     background: 'transparent',
-    zIndex: '3'
+    zIndex: '6'
   });
   wrap.appendChild(fx);
 
@@ -26,7 +27,7 @@
     position: 'absolute',
     left: '12px',
     bottom: '12px',
-    zIndex: '4',
+    zIndex: '7',
     padding: '6px 9px',
     borderRadius: '999px',
     background: 'rgba(7,12,8,.72)',
@@ -50,20 +51,42 @@
   let flash = 0;
 
   const looks = {
-    push:     {speed: 78, size: 30, body:'#e84b4b', trim:'#ffe16b'},
-    electric: {speed:105, size: 32, body:'#3189e8', trim:'#e4f4ff'},
-    rider:    {speed:130, size: 44, body:'#eeb52f', trim:'#2f2b21'},
-    robot:    {speed:112, size: 34, body:'#b9c7cf', trim:'#222b30'},
-    drone:    {speed:145, size: 36, body:'#7f8cff', trim:'#e4e7ff'},
-    fleet:    {speed:158, size: 48, body:'#ff6262', trim:'#242526'},
-    terra:    {speed:170, size: 50, body:'#d96f43', trim:'#9ff0a5'},
-    orbital:  {speed:188, size: 39, body:'#68d5ff', trim:'#eafcff'},
-    quantum:  {speed:180, size: 40, body:'#b375ff', trim:'#f3e6ff'},
-    stellar:  {speed:205, size: 44, body:'#ffb347', trim:'#fff0b0'},
-    reality:  {speed:220, size: 48, body:'#ff65c7', trim:'#a9fff1'}
+    push:     {speed: 78, size: 35, body:'#e84b4b', trim:'#ffe16b'},
+    electric: {speed:105, size: 37, body:'#3189e8', trim:'#e4f4ff'},
+    rider:    {speed:130, size: 49, body:'#eeb52f', trim:'#2f2b21'},
+    robot:    {speed:112, size: 39, body:'#b9c7cf', trim:'#222b30'},
+    drone:    {speed:145, size: 41, body:'#7f8cff', trim:'#e4e7ff'},
+    fleet:    {speed:158, size: 54, body:'#ff6262', trim:'#242526'},
+    terra:    {speed:170, size: 56, body:'#d96f43', trim:'#9ff0a5'},
+    orbital:  {speed:188, size: 44, body:'#68d5ff', trim:'#eafcff'},
+    quantum:  {speed:180, size: 45, body:'#b375ff', trim:'#f3e6ff'},
+    stellar:  {speed:205, size: 49, body:'#ffb347', trim:'#fff0b0'},
+    reality:  {speed:220, size: 54, body:'#ff65c7', trim:'#a9fff1'}
+  };
+
+  const upgradeKeyByName = {
+    'Push Mower':'push',
+    'Electric Mower':'electric',
+    'Riding Mower':'rider',
+    'Robot Mower':'robot',
+    'Drone Mower':'drone',
+    'Mower Fleet':'fleet',
+    'Terraformer Rover':'terra',
+    'Orbital Swarm':'orbital',
+    'Quantum Trimmer':'quantum',
+    'Stellar Harvester':'stellar',
+    'Reality Mower':'reality'
   };
 
   function parseLevel(name) {
+    // Read the actual save state, not the sidebar DOM.
+    // This keeps machines visible even when tabs/UI are rerendered.
+    const key=upgradeKeyByName[name];
+    const state=api.state || {};
+    const value=key && state.upgrades ? Number(state.upgrades[key]||0) : 0;
+    if(Number.isFinite(value)) return value;
+
+    // Fallback for safety.
     const nodes = document.querySelectorAll('#upgrades .upgrade');
     for (const node of nodes) {
       const txt = node.textContent || '';
@@ -108,7 +131,7 @@
 
   function syncMachines() {
     const p = plan();
-    const sig = p.join(',');
+    const sig = p.join(',')+'|'+((api.state&&api.state.stage)||0);
     if (sig === lastPlan) return;
     lastPlan = sig;
     machines = p.map((type, i) => {
@@ -199,6 +222,8 @@
     const s = m.look.size;
     c.save();
     c.translate(m.x, m.y);
+    c.shadowColor = m.look.body;
+    c.shadowBlur = 10;
 
     if (['drone','orbital','stellar'].includes(m.type)) {
       const bob = Math.sin(t / 150 + m.phase) * 4;
